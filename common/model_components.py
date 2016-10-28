@@ -1,5 +1,6 @@
 import tensorflow as tf
 from common.utility_fns import build_train_graph, get_loss
+from layers import fullyConnectedLayer, convPoolLayer
 
 
 ACTIVATIONS = {
@@ -53,8 +54,7 @@ def build_cnn(x, dropout_keep_prob, params):
     return output
 
 
-
-def build_mlp(x, dropout_keep_prob, params):
+def build_mlp(x, dropout_keep_prob, is_training, params):
     
     nLayers = len(params['num_outputs'])
     prev_layer = None
@@ -74,18 +74,53 @@ def build_mlp(x, dropout_keep_prob, params):
             
             with tf.name_scope('dropout'):
                 inpt = tf.nn.dropout(inpt, dropout_keep_prob)
-        
         with tf.variable_scope(layer_name) as scope:
-            layer = tf.contrib.layers.fully_connected(
-                inputs=inpt,
+            layer = fullyConnectedLayer(
+                inpt=inpt,
                 num_outputs=num_outputs,
-                activation_fn=ACTIVATIONS[act],
-                normalizer_fn=tf.contrib.layers.batch_norm)
-
+                layer_name=layer_name,
+                is_training=is_training,
+                act=act
+            )
             scope.reuse_variables()
-            prev_layer = layer
+    
+        prev_layer = layer
 
     return prev_layer
+
+
+# def build_mlp(x, dropout_keep_prob, params):
+    
+#     nLayers = len(params['num_outputs'])
+#     prev_layer = None
+
+#     for i in range(nLayers):
+            
+#         num_outputs = params['num_outputs'][i]
+#         layer_name = 'fc_layer'+str(i+1)
+#         act = params['activations'][i]
+        
+#         if i==0:
+#             inpt = x
+#         else:
+#             inpt = prev_layer
+
+#         if params['dropout'][i]:
+            
+#             with tf.name_scope('dropout'):
+#                 inpt = tf.nn.dropout(inpt, dropout_keep_prob)
+        
+#         with tf.variable_scope(layer_name) as scope:
+#             layer = tf.contrib.layers.fully_connected(
+#                 inputs=inpt,
+#                 num_outputs=num_outputs,
+#                 activation_fn=ACTIVATIONS[act],
+#                 normalizer_fn=tf.contrib.layers.batch_norm)
+
+#             scope.reuse_variables()
+#             prev_layer = layer
+
+#     return prev_layer
 
 
     

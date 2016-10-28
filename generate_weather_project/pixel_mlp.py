@@ -22,7 +22,8 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, resu
     n_bins = ground_truth.shape[1]
     channel_softmaxes = sess.run(model['channel_softmaxes'],
                                  feed_dict = {model['x']: inpt,
-                                              model['dropout_keep_prob']:0.0}
+                                              model['dropout_keep_prob']:0.0,
+                                              model['is_training']: 0.0}
                                  )
 
     n_rows = inpt.shape[0]
@@ -97,9 +98,12 @@ def build_pixel_mlp_model(params):
 
     with tf.name_scope('dropout_keep_prob'):
         dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
-                
+
+    with tf.name_scope('is_training'):
+        is_training = tf.placeholder(tf.float32, name='is_training')
+            
     with tf.variable_scope('mlp'):
-        mlp_output = build_mlp(x, dropout_keep_prob, params['mlp'])
+        mlp_output = build_mlp(x, dropout_keep_prob, is_training, params['mlp'])
 
     # for monitoring
     with tf.name_scope('channel_softmaxes'):
@@ -113,6 +117,7 @@ def build_pixel_mlp_model(params):
         'x': x,
         'y_': y_,
         'dropout_keep_prob': dropout_keep_prob,
+        'is_training': is_training,
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
         'logits': mlp_output,
@@ -170,7 +175,8 @@ def generate_images(X_test_time, params, model, sess, p_i, p_j, p_dim, results_d
             
             X_test_time[:, i, j, :] = sess.run(get_preds(model['logits'], n_channels),
                     feed_dict = {model['x']: patches,
-                                 model['dropout_keep_prob']:0.0
+                                 model['dropout_keep_prob']:0.0,
+                                 model['is_training']:0.0
                     }
             )
 

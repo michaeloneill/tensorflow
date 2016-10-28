@@ -15,7 +15,8 @@ def run_train(train_set, params, model, sess, miniBatchIndex, merged):
     return sess.run([model['train'], model['loss'], merged], feed_dict = {
         model['x']: train_set[0][miniBatchIndex*params['miniBatchSize']:(miniBatchIndex+1)*params['miniBatchSize']],
         model['y_']: train_set[1][miniBatchIndex*params['miniBatchSize']:(miniBatchIndex+1)*params['miniBatchSize']],
-        model['dropout_keep_prob']:params['dropout_keep_prob']
+        model['dropout_keep_prob']:params['dropout_keep_prob'],
+        model['is_training']:1.0
     }
     )
 
@@ -25,7 +26,8 @@ def run_val(val_set, params, model, sess, merged):
     return sess.run([model['loss'], merged], feed_dict = {
         model['x']: val_set[0],
         model['y_']: val_set[1],
-        model['dropout_keep_prob']:0.0
+        model['dropout_keep_prob']:0.0,
+        model['is_training']:0.0
     }
     )
 
@@ -34,7 +36,8 @@ def run_test(test_set, params, model, sess):
     return sess.run(model['loss'], feed_dict = {
         model['x']: test_set[0],
         model['y_']: test_set[1],
-        model['dropout_keep_prob']:0.0
+        model['dropout_keep_prob']:0.0,
+        model['is_training']:0.0
     }
     )
 
