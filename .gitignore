@@ -1,0 +1,8 @@
+*.pyc
+*~
+*.png
+*.pdf
+*#
+*.npz
+*tfevents*
+*__init__*
