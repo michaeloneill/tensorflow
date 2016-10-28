@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 import h5py
 
 
-def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess):
+def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, results_dir):
 
     ''' ground_truth must be [N, n_bins, n_channels] '''
 
@@ -34,8 +34,8 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess):
 
     for i, chan_axes in enumerate(axes):
         for j, ax in enumerate(chan_axes):
-            ax.bar(index, channel_softmaxes[j][i], bar_width, color='b')#label='softmax_chan_{}'.format(j))
-            ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r')#, label='ground_truth_chan_{}'.format(j))
+            ax.bar(index, channel_softmaxes[j][i], bar_width, color='b')
+            ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r')
 
             ax.set_xticks([])
             # ax.set_xticks(index+bar_width)
@@ -43,7 +43,7 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess):
     
             ax.set_ylabel('probability')
             ax.set_yticks([])
-    fig.savefig('softmax_outputs_vs_ground_truth')
+    fig.savefig(results_dir+'softmax_outputs_vs_ground_truth.png')
 
     
 
@@ -167,7 +167,7 @@ def generate_images(X_test_time, params, model, sess, p_i, p_j, p_dim, results_d
             patches = mask_input(patches, p_i, p_j)
             if unroll: # mlp use
                 patches = patches.reshape(-1, p_dim*p_dim*n_channels)
-                
+            
             X_test_time[:, i, j, :] = sess.run(get_preds(model['logits'], n_channels),
                     feed_dict = {model['x']: patches,
                                  model['dropout_keep_prob']:0.0
@@ -201,13 +201,12 @@ def main():
 
     params_train = {
         'miniBatchSize': 20,
-        'epochs':10,
+        'epochs':2,
         'learning_rate':0.01,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
         'momentum': 0.9,
-        'grad_clip': 5,
-        'loss_fn': 'softmax_cross_entropy_with_logits'
+        'grad_clip': 5
     }
 
     params = {
@@ -225,7 +224,7 @@ def main():
     # training_data_filename = '../../data/generate_weather_project/mnist_training_dataset_pixel_mlp_9_5.npz'
     # training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp.npz'
 
-    ################## OVERFIT ######################
+    ################## IMAGE OVERFIT ######################
     training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp_overfit.npz'
     #################################################
     
@@ -242,14 +241,13 @@ def main():
 
     train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
-
+    
     # investigate softmax vs ground truth for selected examples
     n = 2
     n_bins = params['inpt_shape']['y_'][1]/params['n_channels']
     ground_truth = np.reshape(train_set[1], [-1, n_bins, params['n_channels']])
-
-    plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :], model, sess)
-
+    plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
+                                           model, sess, params['results_dir'])
 
     # load the testing dataset
 
@@ -263,8 +261,7 @@ def main():
     data = h5py.File(i_filename, 'r')['Dataset1']
     X_test_time = np.transpose(data[0][None, :], [0, 2, 3, 1]) # [N, H, W, n_channels]
     ###################################################
-
-
+    
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
     tile_shape = (1,1) # for plotting results
