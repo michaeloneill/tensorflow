@@ -159,8 +159,7 @@ def mask_input(patches, row, col):
         patches[i, row+1:, :, :] = 0
         patches[i, row, col:, :] = 0
 
-    else:
-        return patches
+    return patches
 
 
 def get_wrapped_test_time_patches(images, im_i, im_j, p_i, p_j, im_H, im_W, p_dim):

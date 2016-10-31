@@ -242,12 +242,11 @@ def main():
     
     # Load the training dataset
 
-    # training_data_filename = '../../data/generate_weather_project/mnist_training_dataset_pixel_mlp_9_5.npz'
-    # training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp.npz'
 
-    ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp_overfit.npz'
-    #################################################
+    # ################## IMAGE OVERFIT ######################
+    # training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp_overfit.npz'
+    # #################################################
     
     training_data = np.load(training_data_filename)
 
@@ -271,20 +270,19 @@ def main():
 
     # load the testing dataset
 
-    # testing_data_filename = '../../data/generate_weather_project/mnist_test_time_dataset.npz'
-    # testing_data_filename = '../../data/generate_weather_project/wind/wind_201401_test_time_dataset.npz'
-    # testing_data = np.load(testing_data_filename)
-    # X_test_time = testing_data['X_test_time']
+    testing_data_filename = '../../data/generate_weather_project/wind/wind_201401_test_time_dataset.npz'
+    testing_data = np.load(testing_data_filename)
+    X_test_time = testing_data['X_test_time']
 
-    ################ IMAGE OVERFIT ##########################
-    i_filename = '../../data/generate_weather_project/wind/raw/wind_201401.h5'
-    data = h5py.File(i_filename, 'r')['Dataset1']
-    X_test_time = np.transpose(data[0][None, :], [0, 2, 3, 1]) # [N, H, W, n_channels]
-    ###################################################
+    # ################ IMAGE OVERFIT ##########################
+    # i_filename = '../../data/generate_weather_project/wind/raw/wind_201401.h5'
+    # data = h5py.File(i_filename, 'r')['Dataset1']
+    # X_test_time = np.transpose(data[0][None, :], [0, 2, 3, 1]) # [N, H, W, n_channels]
+    # ###################################################
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
-    tile_shape = (1,1) # for plotting results
+    tile_shape = (10,10) # for plotting results
 
     generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],

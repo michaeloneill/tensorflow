@@ -58,6 +58,104 @@ def get_train_time_patches_labels(images_train, images_val, images_test, params)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
+
+def generate_wind_train_time_dataset_historical(unroll, i_filenames, o_filename):
+
+    data = []
+    for f in i_filenames:
+        d = h5py.File(f, 'r')['Dataset1']
+        d = np.transpose(d, [0, 2, 3, 1]) # [N, H, W, n_channels]
+        N, H, W, n_components = d.shape
+
+        assert N % 4 == 0 # data should be recorded at 6 hourly intervals
+        data = np.array([np.concatenate(x, 2) for x in np.split(d, N/4)]) # [N/4, H, W, 4*n_components]
+        data.append(d)
+
+    data = np.concatenate(data)
+    N, H, W, n_channels = d.shape
+    
+    # ################# IMAGE OVERFIT ##################
+    # data = np.array([data[0] for i in range(N)])
+    # ############################################
+                    
+
+    # plot first data example as 4*2 grid with rows snapshots and cols x/y components
+    wind_images = Image.fromarray(tile_raster_images(
+        X=data[0].transpose(2, 0, 1).reshape(-1, H*W),
+        img_shape=(H, W),
+        tile_shape=(4,2),
+        tile_spacing=(1,1),
+        scale_to_unit_interval=False))
+    wind_images.save('sample_0_historical.png'.format(i*6, j))
+        
+
+    params = {
+        'n_patches_train': 40000,
+        'n_patches_val': 5000,
+        'n_patches_test': 5000,
+        'patch_dim': 10,
+        'n_bins': 256,
+        'n_channels': 2,
+        'p_i': 9,
+        'p_j': 5
+    }
+
+    # split into train, test val
+
+    indices = np.random.permutation(N)
+    X_train = data[indices[:0.8*N]]
+    X_val = data[indices[0.8*N:0.9*N]]
+    X_test = data[indices[0.9*N:]]
+
+    # get training patches and labels
+
+    X_train, y_train, X_val, y_val, X_test, y_test = get_train_time_patches_labels(X_train, X_val, X_test, params)
+
+
+    # ############ PATCH OVERFIT ############
+
+    # X_train = np.array([X_train[0] for i in range(X_train.shape[0])])
+    # y_train = np.array([y_train[0] for i in range(y_train.shape[0])])
+
+    # X_val = np.array([X_val[0] for i in range(X_val.shape[0])])
+    # y_val = np.array([y_val[0] for i in range(y_val.shape[0])])
+
+    # X_test = np.array([X_test[0] for i in range(X_test.shape[0])])
+    # y_test = np.array([y_test[0] for i in range(y_test.shape[0])])
+
+    # #################################################
+
+    
+    # plot masked training patches
+
+    for i, j in enumerate(['x', 'y']):
+        wind_images = Image.fromarray(tile_raster_images(
+            X=X_train[:, :, :, i].reshape(-1, params['patch_dim']*params['patch_dim']),
+            img_shape=(params['patch_dim'], params['patch_dim']),
+            tile_shape=(10,10),
+            tile_spacing=(1,1),
+            scale_to_unit_interval=False))
+        wind_images.save('wind_{}_masked_training_patches.png'.format(j))
+
+        
+    if unroll: # for use in mlp
+
+        X_train = X_train.reshape(params['n_patches_train'], -1)
+        X_val = X_val.reshape(params['n_patches_val'], -1)
+        X_test = X_test.reshape(params['n_patches_test'], -1)
+
+         
+    print 'X_train and y_train shapes: {}, {}'.format(X_train.shape, y_train.shape)
+    print 'X_val and y_val shapes: {}, {}'.format(X_val.shape, y_val.shape)
+    print 'X_test and y_test shapes: {}, {}'.format(X_test.shape, y_test.shape)
+
+    
+    with open(o_filename, 'wb') as f:
+        np.savez(f, X_train=X_train, y_train=y_train, X_val=X_val,
+                 y_val=y_val, X_test=X_test, y_test=y_test)
+
+
+        
 def generate_wind_train_time_dataset(unroll, i_filename, o_filename):
 
     data = h5py.File(i_filename, 'r')['Dataset1']
@@ -86,7 +184,7 @@ def generate_wind_train_time_dataset(unroll, i_filename, o_filename):
         'n_patches_val': 5000,
         'n_patches_test': 5000,
         'patch_dim': 10,
-        'n_bins': 10,
+        'n_bins': 256,
         'n_channels': 2,
         'p_i': 9,
         'p_j': 5
@@ -293,10 +391,10 @@ if __name__=='__main__':
     # generate_mnist_train_time_dataset(unroll=False, o_filename=o_filename) # cnn
 
 
-    ############################ wind #################################
+    ############################ wind one month #################################
 
     
-    i_filename = '../../data/generate_weather_project/wind/raw/wind_201401.h5'
+    # i_filename = '../../data/generate_weather_project/wind/raw/wind_201401.h5'
 
     # o_filename_test = '../../data/generate_weather_project/wind/wind_201401_test_time_dataset.npz'
     # generate_wind_test_time_dataset(i_filename, o_filename_test)
@@ -316,8 +414,11 @@ if __name__=='__main__':
     # o_filename_train_overfit_patch = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_mlp_overfit_patch.npz' # mlp
     # generate_wind_train_time_dataset(True, i_filename, o_filename_train_overfit_patch)
 
-    o_filename_train_overfit_patch = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_cnn_overfit_patch.npz' # cnn
-    generate_wind_train_time_dataset(False, i_filename, o_filename_train_overfit_patch)
+    # o_filename_train_overfit_patch = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_cnn_overfit_patch.npz' # cnn
+    # generate_wind_train_time_dataset(False, i_filename, o_filename_train_overfit_patch)
 
 
+    ########################### wind historical ######################################
+
+    
     
