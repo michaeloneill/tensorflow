@@ -114,31 +114,6 @@ def unit_scale(X):
         return X
     
 
-def build_train_graph(loss, params):
-
-    with tf.name_scope('train'):
-        tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), params['grad_clip'])
-
-        optimizer = tf.train.MomentumOptimizer(params['learning_rate'], momentum=params['momentum'])
-        train_step = optimizer.apply_gradients(zip(grads, tvars))
-
-        return train_step
-
-
-def get_loss(logits, targets, loss_fn='mean_squared'):
-    if loss_fn == 'mean_squared':
-        return tf.reduce_sum(tf.square(logits-targets)) # squared error over minibatch
-    elif loss_fn == 'sigmoid_cross_entropy_with_logits':
-        return tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits, targets))
-    elif loss_fn == 'softmax_cross_entropy_with_logits':
-        return tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits, targets))
-    else:
-        print 'unrecognised loss function'
-        sys.exit(2)
-
-
-
 
 def sample_patches(images, patch_dim, num_patches):
 

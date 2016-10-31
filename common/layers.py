@@ -2,16 +2,8 @@ import tensorflow as tf
 import numpy as np
 import pdb
 
-ACTIVATIONS = {
-    'sigmoid': tf.sigmoid,
-    'tanh': tf.tanh,
-    'relu': tf.nn.relu,
-    'softmax': tf.nn.softmax,
-    'identity': tf.identity
-    }
 
-
-def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1e-3):
+def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1e-3, conv=False):
 
     with tf.name_scope(layer_name):
         with tf.name_scope('bn_scale'):
@@ -23,8 +15,11 @@ def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1
         with tf.name_scope('pop_var'):
             pop_var = tf.Variable(tf.ones([inputs.get_shape()[-1]]), trainable=False)
 
-        
-        batch_mean, batch_var = tf.nn.moments(inputs,[0])
+        if conv:
+            batch_mean, batch_var = tf.nn.moments(inputs,[0, 1, 2])
+        else:
+            batch_mean, batch_var = tf.nn.moments(inputs,[0])
+            
         train_mean = tf.assign(pop_mean,
                                pop_mean * decay + batch_mean * (1 - decay))
         train_var = tf.assign(pop_var,
@@ -38,67 +33,64 @@ def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1
 
         return is_training*train_time + (1-is_training)*test_time
 
-def convPoolLayer(inpt, filtr_shape, layer_name, is_training, act='sigmoid', pool=True):
+
+def convPoolLayer(inputs, num_outputs, kernel_size, stride, padding,
+                  layer_name, is_training, activation_fn, pool=True):
 
     """
- 
-    filtr_shape is [fHeight, fWidth, nInputFeatureMaps, nOutputFeatureMaps]
-    inpt is b x imWidth x imHight x nChannels
+    inputs is b x imWidth x imHight x nChannels
 
     """
     
     with tf.name_scope(layer_name):
         with tf.name_scope('filtr'):
-            filtr = weight_variable(filtr_shape)
+            filtr = weight_variable([kernel_size[0], kernel_size[1],
+                                     inputs.get_shape()[-1].value,
+                                     num_outputs])
         with tf.name_scope('logits'):
-            logits = conv2d(inpt, filtr)
+            logits = conv2d(inputs, filtr)
         with tf.name_scope('logits_bn'):
-            logits_bn = batch_norm_wrapper(logits, is_training, layer_name)
+            logits_bn = batch_norm_wrapper(logits, is_training, layer_name, conv=True)
         with tf.name_scope('activations'):
-            activations = ACTIVATIONS[act](logits_bn)
+            activations = activation_fn(logits_bn)
         if pool:
             with tf.name_scope('pooled'):
                 pooled = max_pool_2x2(activations)
-                return pooled
+            return pooled
         else:
             return activations
 
     
-def fullyConnectedLayer(inpt, num_outputs, layer_name,
+def fullyConnectedLayer(inputs, num_outputs, layer_name,
                         is_training,
-                        act='sigmoid'):
+                        activation_fn):
 
     with tf.name_scope(layer_name):
-
         with tf.variable_scope('weights'):
-            weights = weight_variable([inpt.get_shape()[-1].value, num_outputs])
+            weights = weight_variable([inputs.get_shape()[-1].value, num_outputs])
         with tf.name_scope('logits'):
-            logits = tf.matmul(inpt, weights)
+            logits = tf.matmul(inputs, weights)
         with tf.name_scope('logits_bn'):
             logits_bn = batch_norm_wrapper(logits, is_training, layer_name)
         with tf.name_scope('activations'):
-            activations = ACTIVATIONS[act](logits_bn)
+            activations = activation_fn(logits_bn)
 
-        return activations
+    return activations
 
 
 def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
     
-    return tf.get_variable('weights', shape, initializer=tf.truncated_normal_initializer(), dtype=tf.float32)
-
-
-
-def conv2d(inpt, W):
-    return tf.nn.conv2d(inpt, W, strides=[1,1,1,1], padding='SAME')
+def conv2d(inputs, filtr):
+    return tf.nn.conv2d(inputs, filtr, strides=[1,1,1,1], padding='SAME')
 
 def max_pool_2x2(inpt):
 
     return tf.nn.max_pool(inpt, ksize=[1,2,2,1], strides=[1,2,2,1],
                           padding= 'SAME')
 
-def deconv2d(inpt, filtr, output_shape):
-    return tf.nn.conv2d_transpose(inpt, filtr, output_shape, strides=[1,1,1,1],
-                          padding="SAME") 
+
 
 
 
@@ -118,6 +110,15 @@ def deconv2d(inpt, filtr, output_shape):
 #         with tf.name_scope('deconvolved'):
 #             deconvolved = ACTIVATIONS[act](deconv2d(inpt, filtr, outpt_shape) + biases)
 #         return deconvolved
+
+
+# def deconv2d(inpt, filtr, output_shape):
+#     return tf.nn.conv2d_transpose(inpt, filtr, output_shape, strides=[1,1,1,1],
+#                           padding="SAME") 
+
+
+# def weight_variable(shape):
+#     return tf.get_variable('weights', shape, initializer=tf.truncated_normal_initializer(), dtype=tf.float32)
 
 
 # def bias_variable(shape):

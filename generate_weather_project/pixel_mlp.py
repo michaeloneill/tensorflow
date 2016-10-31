@@ -38,12 +38,23 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, resu
             ax.bar(index, channel_softmaxes[j][i], bar_width, color='b')
             ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r')
 
-            ax.set_xticks([])
-            # ax.set_xticks(index+bar_width)
-            # ax.set_xticklabels(index)
-    
-            ax.set_ylabel('probability')
-            ax.set_yticks([])
+            ax.set_xticks([bar_width, (n_bins-1)+bar_width])
+            ax.set_xticklabels([0, n_bins-1])
+
+            # ax.set_xticks((index+bar_width)[0:None:64])
+            # ax.set_xticklabels(index[0:None:16])
+
+            ax.set_yticks([0, 1])
+            ax.set_yticklabels([0,1])
+            # ax.set_yticklabels([0.0,0.5,1.0])
+
+            if i==0:
+                ax.set_title('channel {}'.format(j))
+            if i==axes.shape[0]-1:
+                ax.set_xlabel('bin number')
+            if j==0:                                     
+                ax.set_ylabel('prob (ex. {})'.format(i+1))
+
     fig.savefig(results_dir+'softmax_outputs_vs_ground_truth.png')
 
     
@@ -97,10 +108,14 @@ def build_pixel_mlp_model(params):
 
 
     with tf.name_scope('dropout_keep_prob'):
-        dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        dropout_keep_prob = tf.placeholder(tf.float32,
+                                           shape=(),
+                                           name='dropout_keep_prob')
 
     with tf.name_scope('is_training'):
-        is_training = tf.placeholder(tf.float32, name='is_training')
+        is_training = tf.placeholder(tf.float32,
+                                     shape=(),
+                                     name='is_training')
             
     with tf.variable_scope('mlp'):
         mlp_output = build_mlp(x, dropout_keep_prob, is_training, params['mlp'])
@@ -207,7 +222,7 @@ def main():
 
     params_train = {
         'miniBatchSize': 20,
-        'epochs':2,
+        'epochs': 10,
         'learning_rate':0.01,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
@@ -247,9 +262,8 @@ def main():
 
     train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
-    
     # investigate softmax vs ground truth for selected examples
-    n = 2
+    n = 3
     n_bins = params['inpt_shape']['y_'][1]/params['n_channels']
     ground_truth = np.reshape(train_set[1], [-1, n_bins, params['n_channels']])
     plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
@@ -272,7 +286,7 @@ def main():
     p_dim = 10
     tile_shape = (1,1) # for plotting results
 
-    generate_images(X_test_time[:, :28, :28, :], params['train'], model,
+    generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],
                     unroll=True, tile_shape=tile_shape)
 

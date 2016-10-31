@@ -32,9 +32,13 @@ def build_pixel_cnn_model(params):
 
     with tf.name_scope('dropout_keep_prob'):
         dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
-                
+
+    with tf.name_scope('is_training'):
+        is_training = tf.placeholder(tf.float32,
+                                     shape=(),
+                                     name='is_training')
     with tf.variable_scope('cnn'):
-        cnn_output = build_cnn(x, dropout_keep_prob, params['cnn'])
+        cnn_output = build_cnn(x, dropout_keep_prob, is_training, params['cnn'])
 
     # for monitoring
     with tf.name_scope('channel_softmaxes'):
@@ -42,12 +46,13 @@ def build_pixel_cnn_model(params):
             
     with tf.name_scope('loss_total'):
         loss = get_total_loss(cnn_output, y_, params['n_channels']) 
-    tf.scalar_summary('loss', loss)
+    tf.scalar_summary('loss_total', loss)
 
     model = {
         'x': x,
         'y_': y_,
         'dropout_keep_prob': dropout_keep_prob,
+        'is_training': is_training,
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
         'logits': cnn_output,
@@ -69,6 +74,7 @@ def main():
         'kernel_size': [[3,3], [3,3]],
         'num_outputs': [6, 12],
         'activations': ['relu', 'relu'],
+        'pool': [True, True],
         'fc_params':{'num_outputs': [512], 'activations': ['identity'], 'dropout':[False]}
     }
 
@@ -115,7 +121,7 @@ def main():
     train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
     # investigate softmax vs ground truth for selected examples
-    n = 2
+    n = 3
     n_bins = params['inpt_shape']['y_'][1]/params['n_channels']
     ground_truth = np.reshape(train_set[1], [-1, n_bins, params['n_channels']])
 
@@ -139,9 +145,9 @@ def main():
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
-    tile_shape = (1,1)
+    tile_shape = (1, 1)
 
-    generate_images(X_test_time[:, :28, :28, :], params['train'], model,
+    generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],
                     unroll=False, tile_shape=tile_shape)
 
