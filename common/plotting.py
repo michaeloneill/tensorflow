@@ -2,7 +2,6 @@ import numpy as np
 from utility_fns import unit_scale
 
 
-
 def images_to_tuple(images):
 
         """

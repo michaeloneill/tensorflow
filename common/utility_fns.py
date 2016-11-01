@@ -141,23 +141,23 @@ def sample_patches(images, patch_dim, num_patches):
     return patches
 
 
-def mask_input(patches, row, col):
+def mask_input(patches, row, col, channels):
 
     '''
     Zeros out input pixels including, below and to right of (row, col) to mimic an automaton.
 
     (row, col) represents coordinates of pixel we want to predict.
     patches is [n, patch_dim, patch_dim, C]
+    channels is list of channels (patches.shape[-1]) that are to be masked
 
     Returns rastered masked patches [n, patch_dim, patch_dim, C]
     
     '''
     assert row < patches.shape[1] and col < patches.shape[2]
-    n = patches.shape[0]
     
     for i in xrange(patches.shape[0]):
-        patches[i, row+1:, :, :] = 0
-        patches[i, row, col:, :] = 0
+        patches[i, row+1:, :, channels] = 0
+        patches[i, row, col:, channels] = 0
 
     return patches
 
