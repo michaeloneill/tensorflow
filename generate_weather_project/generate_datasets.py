@@ -96,7 +96,7 @@ def generate_wind_datasets_historical(unroll, i_filenames, o_filename_prefix):
         'n_patches_val': 5000,
         'n_patches_test': 5000,
         'patch_dim': 10,
-        'n_bins': 8,
+        'n_bins': 256,
         'p_i': 9,
         'p_j': 5
     }
@@ -443,11 +443,11 @@ if __name__=='__main__':
     i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
 
     # mlp
-    o_filename_prefix = '../../data/generate_weather_project/wind_201401_dataset_pixel_mlp_overfit_historical'
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical'
     generate_wind_datasets_historical(True, i_filenames, o_filename_prefix) 
 
     #cnn
-    o_filename_prefix = '../../data/generate_weather_project/wind_201401_dataset_pixel_cnn_overfit_historical'
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical'
     generate_wind_datasets_historical(False, i_filenames, o_filename_prefix) 
 
     

@@ -215,7 +215,7 @@ def main():
         os.makedirs(results_dir)
 
     params_mlp = {
-        'num_outputs': [100, 100, 16],
+        'num_outputs': [100, 100, 512],
         'activations': ['relu', 'relu', 'identity'],
         'dropout': [False, False, False]
     }
@@ -234,7 +234,7 @@ def main():
     params = {
         'mlp': params_mlp,
         'train': params_train,
-        'inpt_shape': {'x': [None, 800], 'y_': [None, 16]},
+        'inpt_shape': {'x': [None, 800], 'y_': [None, 512]},
         'channels_to_predict': [6,7],
         'device':'/gpu:1',
         'results_dir': results_dir
@@ -244,7 +244,7 @@ def main():
     # Load the training dataset
 
     ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_mlp_overfit_historical.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_train_time.npz'
     #################################################
     
     training_data = np.load(training_data_filename)
@@ -258,24 +258,23 @@ def main():
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
-    # train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
+    train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
     # investigate softmax vs ground truth for selected examples that were trained on
     n = 3
-    n_bins = params['inpt_shape']['y_'][1]/params['n_channels_to_predict']
-    ground_truth = np.reshape(train_set[1], [-1, n_bins, params['n_channels_to_predict']])
+    n_bins = params['inpt_shape']['y_'][1]/len(params['channels_to_predict'])
+    ground_truth = np.reshape(train_set[1], [-1, n_bins, len(params['channels_to_predict'])])
     plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
                                            model, sess, params['results_dir'])
 
     # load the testing dataset
 
     ####################### IMAGE OVERFIT ############################################
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_mlp_overfit_historical_test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_test_time.npz'
     ############################################################################
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time'][0][None, :]
-
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
@@ -283,7 +282,8 @@ def main():
 
     generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],
-                    unroll=True, tile_shape=tile_shape)
+                    unroll=True, tile_shape=tile_shape,
+                    channels_to_predict=params['channels_to_predict'])
 
     
 
