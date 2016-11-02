@@ -221,7 +221,7 @@ if __name__=='__main__':
     generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=True)
 
     # cnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn_overfit.npz' 
+    o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn_overfit' 
     generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=False)
 
     ########################### wind historical one month ######################################

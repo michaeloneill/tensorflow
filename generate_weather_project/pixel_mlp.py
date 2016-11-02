@@ -244,7 +244,7 @@ def main():
     # Load the training dataset
 
     ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_train_time.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp_overfit_train_time.npz'
     #################################################
     
     training_data = np.load(training_data_filename)
@@ -270,7 +270,7 @@ def main():
     # load the testing dataset
 
     ####################### IMAGE OVERFIT ############################################
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp_overfit_test_time.npz'
     ############################################################################
     
     testing_data = np.load(testing_data_filename)

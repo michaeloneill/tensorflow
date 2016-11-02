@@ -90,8 +90,8 @@ def main():
     params = {
         'cnn': params_cnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 10, 10, 8], 'y_': [None, 512]},
-        'channels_to_predict': [6,7],
+        'inpt_shape': {'x': [None, 10, 10, 2], 'y_': [None, 512]},
+        'channels_to_predict': [0,1],
         'device':'/gpu:1',
         'results_dir': results_dir
     }
@@ -100,7 +100,7 @@ def main():
     # Load the training dataset
 
     ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical_train_time.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn_overfit_train_time.npz'
     #################################################
 
     training_data = np.load(training_data_filename)
@@ -127,7 +127,7 @@ def main():
     # load the testing dataset
                               
     ####################### IMAGE OVERFIT ############################################
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical_test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn_overfit_test_time.npz'
     ############################################################################
 
     testing_data = np.load(testing_data_filename)
