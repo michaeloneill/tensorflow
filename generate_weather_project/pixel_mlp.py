@@ -234,8 +234,8 @@ def main():
     params = {
         'mlp': params_mlp,
         'train': params_train,
-        'inpt_shape': {'x': [None, 800], 'y_': [None, 512]},
-        'channels_to_predict': [6,7],
+        'inpt_shape': {'x': [None, 200], 'y_': [None, 512]},
+        'channels_to_predict': [0,1],
         'device':'/gpu:1',
         'results_dir': results_dir
     }
