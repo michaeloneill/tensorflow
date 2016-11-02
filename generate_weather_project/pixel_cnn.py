@@ -2,16 +2,10 @@ import tensorflow as tf
 import numpy as np
 
 from common.model_components import build_cnn, build_train_graph
-from common.utility_fns import train, get_wrapped_test_time_patches, mask_input
+from common.utility_fns import train
 from pixel_mlp import generate_images, get_preds, get_total_loss, get_channel_softmaxes, plot_channel_softmaxes_vs_ground_truth
 import os
 import pdb
-from common.plotting import tile_raster_images
-from PIL import Image
-
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt
 
 
 import h5py
@@ -40,14 +34,18 @@ def build_pixel_cnn_model(params):
     with tf.variable_scope('cnn'):
         cnn_output = build_cnn(x, dropout_keep_prob, is_training, params['cnn'])
 
+    with tf.name_scope('predictions'):
+        preds = get_preds(cnn_output, len(params['channels_to_predict']))
+        
     # for monitoring
     with tf.name_scope('channel_softmaxes'):
-        channel_softmaxes = get_channel_softmaxes(cnn_output, params['n_channels'])
-            
+        channel_softmaxes = get_channel_softmaxes(cnn_output, len(params['channels_to_predict']))
+        
     with tf.name_scope('loss_total'):
-        loss = get_total_loss(cnn_output, y_, params['n_channels']) 
+        loss = get_total_loss(cnn_output, y_, len(params['channels_to_predict']))
     tf.scalar_summary('loss_total', loss)
 
+        
     model = {
         'x': x,
         'y_': y_,
@@ -56,6 +54,7 @@ def build_pixel_cnn_model(params):
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
         'logits': cnn_output,
+        'preds': preds,
         'channel_softmaxes': channel_softmaxes
     }
     
@@ -91,8 +90,8 @@ def main():
     params = {
         'cnn': params_cnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 10, 10, 2], 'y_': [None, 512]},
-        'n_channels': 2,
+        'inpt_shape': {'x': [None, 10, 10, 8], 'y_': [None, 512]},
+        'channels_to_predict': [6,7],
         'device':'/gpu:1',
         'results_dir': results_dir
     }
@@ -100,11 +99,8 @@ def main():
     
     # Load the training dataset
 
-    # training_data_filename = '../../data/generate_weather_project/mnist_training_dataset_pixel_cnn_9_5.npz'
-    # training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_cnn.npz'
-
     ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/wind_201401_train_time_dataset_pixel_cnn_overfit.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical_train_time.npz'
     #################################################
 
     training_data = np.load(training_data_filename)
@@ -122,26 +118,20 @@ def main():
 
     # investigate softmax vs ground truth for selected examples
     n = 3
-    n_bins = params['inpt_shape']['y_'][1]/params['n_channels']
-    ground_truth = np.reshape(train_set[1], [-1, n_bins, params['n_channels']])
+    n_bins = params['inpt_shape']['y_'][1]/len(params['channels_to_predict'])
+    ground_truth = np.reshape(train_set[1], [-1, n_bins, len(params['channels_to_predict'])])
 
     plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
                                            model, sess, params['results_dir'])
 
     # load the testing dataset
+                              
+    ####################### IMAGE OVERFIT ############################################
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical_test_time.npz'
+    ############################################################################
 
-    # testing_data_filename = '../../data/generate_weather_project/mnist_test_time_dataset.npz'
-    # testing_data_filename = '../../data/generate_weather_project/wind/wind_201401_test_time_dataset.npz'
-    # testing_data = np.load(testing_data_filename)
-    # X_test_time = testing_data['X_test_time']
-
-
-    ################ IMAGE OVERFIT ##########################
-    i_filename = '../../data/generate_weather_project/wind/raw/wind_201401.h5'
-    data = h5py.File(i_filename, 'r')['Dataset1']
-    X_test_time = np.transpose(data[0][None, :], [0, 2, 3, 1]) # [N, H, W, n_channels]
-    ###################################################
-
+    testing_data = np.load(testing_data_filename)
+    X_test_time = testing_data['X_test_time'][0][None, :]
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
@@ -149,7 +139,8 @@ def main():
 
     generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],
-                    unroll=False, tile_shape=tile_shape)
+                    unroll=False, tile_shape=tile_shape,
+                    channels_to_predict=params['channels_to_predict'])
 
     
 

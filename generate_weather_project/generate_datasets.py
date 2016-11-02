@@ -176,7 +176,7 @@ def generate_wind_datasets_historical(unroll, i_filenames, o_filename_prefix):
 
 
         
-def generate_wind_train_time_dataset(unroll, i_filename, o_filename):
+def generate_wind_train_time_dataset(unroll, i_filename, o_filename_prefix):
 
     data = h5py.File(i_filename, 'r')['Dataset1']
     data = np.transpose(data, [0, 2, 3, 1]) # [N, H, W, n_channels]
@@ -216,6 +216,23 @@ def generate_wind_train_time_dataset(unroll, i_filename, o_filename):
     X_train = data[indices[:0.8*N]]
     X_val = data[indices[0.8*N:0.9*N]]
     X_test = data[indices[0.9*N:]]
+
+    # save X_test for use at test time
+
+    print 'X for use at test time has shape is {}'.format(X_test.shape)
+
+    for i in range(n_channels):
+        wind_images = Image.fromarray(tile_raster_images(
+            X=X_test[:, :, :, i].reshape(-1, H*W),
+            img_shape=(H, W),
+            tile_shape=(10,10),
+            tile_spacing=(1,1),
+            scale_to_unit_interval=False))
+        wind_images.save('X_test_time_channel_{}.png'.format(i))
+    
+    with open(o_filename_prefix+'_test_time_channel_{}.npz'.format(i), 'wb') as f:
+        np.savez(f, X_test_time=X_test)
+
 
     # get training patches and labels
 
@@ -260,7 +277,7 @@ def generate_wind_train_time_dataset(unroll, i_filename, o_filename):
     print 'X_test and y_test shapes: {}, {}'.format(X_test.shape, y_test.shape)
 
     
-    with open(o_filename, 'wb') as f:
+    with open(o_filename_prefix + '_train_time.npz', 'wb') as f:
         np.savez(f, X_train=X_train, y_train=y_train, X_val=X_val,
                  y_val=y_val, X_test=X_test, y_test=y_test)
 
@@ -328,35 +345,6 @@ def generate_mnist_train_time_dataset(unroll, o_filename):
     with open(o_filename, 'wb') as f:
         np.savez(f, X_train=X_train, y_train=y_train, X_val=X_val,
                  y_val=y_val, X_test=X_test, y_test=y_test)
-
-
-def generate_wind_test_time_dataset(i_filename, o_filename):
-
-    # trying to over-fit
-    
-    data = h5py.File(i_filename, 'r')['Dataset1']
-    X_test_time = np.transpose(data, [0, 2, 3, 1]) # [N, H, W, n_channels]
-
-    N, H, W, n_channels = X_test_time.shape
-    
-    # zero out bottom half
-
-    X_test_time[:, H/2:, :, :] = 0
-
-    print 'X_test_time shape is {}'.format(X_test_time.shape)
-
-    for i, j in enumerate(['x', 'y']):
-        wind_images = Image.fromarray(tile_raster_images(
-            X=X_test_time[:, :, :, i].reshape(N, -1),
-            img_shape=(H, W),
-            tile_shape=(10,10),
-            tile_spacing=(1,1),
-            scale_to_unit_interval=False))
-        wind_images.save('wind_{}_images_test_time.png'.format(j))
-
-    with open(o_filename, 'wb') as f:
-        np.savez(f, X_test_time=X_test_time)
-
 
         
 def generate_mnist_test_time_dataset():
