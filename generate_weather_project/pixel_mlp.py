@@ -243,10 +243,8 @@ def main():
     
     # Load the training dataset
 
-    ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_train_time.npz'
-    #################################################
-    
+
+    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical/train_time.npz'    
     training_data = np.load(training_data_filename)
 
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -270,16 +268,14 @@ def main():
 
     # load the testing dataset
 
-    ####################### IMAGE OVERFIT ############################################
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_test_time.npz'
-    ############################################################################
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
-    X_test_time = testing_data['X_test_time'][0][None, :]
+    X_test_time = testing_data['X_test_time']
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
-    tile_shape = (1, 1) # for plotting results
+    tile_shape = (2, 2) # for plotting results
 
 
     generate_images(X_test_time, params['train'], model,
