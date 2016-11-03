@@ -223,7 +223,7 @@ def main():
 
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 1,
+        'epochs': 10,
         'learning_rate':0.01,
         'dropout_keep_prob': 0.5, # if dropout layers exist
         'monitor_frequency': 10,
@@ -234,8 +234,8 @@ def main():
     params = {
         'mlp': params_mlp,
         'train': params_train,
-        'inpt_shape': {'x': [None, 200], 'y_': [None, 512]},
-        'channels_to_predict': [0,1],
+        'inpt_shape': {'x': [None, 800], 'y_': [None, 512]},
+        'channels_to_predict': [6,7],
         'device':'/gpu:1',
         'results_dir': results_dir
     }
@@ -244,7 +244,7 @@ def main():
     # Load the training dataset
 
     ################## IMAGE OVERFIT ######################
-    training_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp_overfit_train_time.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_train_time.npz'
     #################################################
     
     training_data = np.load(training_data_filename)
@@ -258,7 +258,7 @@ def main():
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
-    # train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
+    train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
     # investigate softmax vs ground truth for selected examples that were trained on
     n = 3
@@ -271,7 +271,7 @@ def main():
     # load the testing dataset
 
     ####################### IMAGE OVERFIT ############################################
-    testing_data_filename = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp_overfit_test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical_test_time.npz'
     ############################################################################
     
     testing_data = np.load(testing_data_filename)
