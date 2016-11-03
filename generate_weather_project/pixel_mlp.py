@@ -191,7 +191,7 @@ def generate_images(X_test_time, params, model, sess,
             
             X_test_time[:, i, j, channels_to_predict] = sess.run(model['preds'],
                     feed_dict = {model['x']: patches,
-                                 model['dropout_keep_prob']:0.0,
+                                 model['dropout_keep_prob']:1.0,
                                  model['is_training']:0.0
                     }
             )
