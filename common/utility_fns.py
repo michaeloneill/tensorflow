@@ -89,8 +89,8 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
             iteration = epoch*nBatchTrain + miniBatchIndex
 
             _, loss_train, summary = run_train(train_set, params, model, sess, miniBatchIndex, merged)
-            train_writer.add_summary(summary, iteration) 
-            
+            train_writer.add_summary(summary, iteration)
+
             agg_loss_train += loss_train
             
             if (iteration+1)%params['monitor_frequency'] == 0:

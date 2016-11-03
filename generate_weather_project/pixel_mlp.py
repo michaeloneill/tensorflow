@@ -24,7 +24,7 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, resu
     # n_channels_to_predict *[N, n_bins]
     channel_softmaxes = sess.run(model['channel_softmaxes'],
                                  feed_dict = {model['x']: inpt,
-                                              model['dropout_keep_prob']:0.0,
+                                              model['dropout_keep_prob']:1.0,
                                               model['is_training']: 0.0}
                                  )
 
@@ -188,7 +188,7 @@ def generate_images(X_test_time, params, model, sess,
             patches = mask_input(patches, p_i, p_j, channels_to_predict)
             if unroll: # mlp use
                 patches = patches.reshape(-1, p_dim*p_dim*n_channels)
-            
+
             X_test_time[:, i, j, channels_to_predict] = sess.run(model['preds'],
                     feed_dict = {model['x']: patches,
                                  model['dropout_keep_prob']:1.0,
@@ -223,7 +223,7 @@ def main():
 
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 10,
+        'epochs': 1,
         'learning_rate':0.01,
         'dropout_keep_prob': 0.5, # if dropout layers exist
         'monitor_frequency': 10,
@@ -258,12 +258,13 @@ def main():
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
-    train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
+    # train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
     # investigate softmax vs ground truth for selected examples that were trained on
     n = 3
     n_bins = params['inpt_shape']['y_'][1]/len(params['channels_to_predict'])
     ground_truth = np.reshape(train_set[1], [-1, n_bins, len(params['channels_to_predict'])])
+    
     plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
                                            model, sess, params['results_dir'])
 
@@ -279,6 +280,7 @@ def main():
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
     tile_shape = (1, 1) # for plotting results
+
 
     generate_images(X_test_time, params['train'], model,
                     sess, p_i, p_j, p_dim, params['results_dir'],
