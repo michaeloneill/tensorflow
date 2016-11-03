@@ -72,7 +72,6 @@ def build_mlp(x, dropout_keep_prob, is_training, params):
             inpt = prev_layer
 
         if params['dropout'][i]:
-            
             with tf.name_scope('dropout'):
                 inpt = tf.nn.dropout(inpt, dropout_keep_prob)
 

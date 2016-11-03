@@ -217,7 +217,7 @@ def main():
     params_mlp = {
         'num_outputs': [100, 100, 512],
         'activations': ['relu', 'relu', 'identity'],
-        'dropout': [False, False, False]
+        'dropout': [False, False, True]
     }
 
 
@@ -225,7 +225,7 @@ def main():
         'miniBatchSize': 20,
         'epochs': 10,
         'learning_rate':0.01,
-        'dropout_keep_prob': 0.5,
+        'dropout_keep_prob': 0.5, # if dropout layers exist
         'monitor_frequency': 10,
         'momentum': 0.9,
         'grad_clip': 5
