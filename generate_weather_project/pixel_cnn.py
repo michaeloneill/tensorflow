@@ -99,7 +99,7 @@ def main():
     
     # Load the training dataset
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_historical/train_time.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn/train_time.npz'
 
     training_data = np.load(training_data_filename)
 
@@ -124,14 +124,13 @@ def main():
 
     # load the testing dataset
                               
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_historical/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn/test_time.npz'
 
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
 
-    # zero out bottom half
-    X_test_time.shape[1] = H
-    X_test_time[:, H/2, :, params['channels_to_predict']] = 0
+    # zero out prediction channels
+    X_test_time[:, :, :, params['channels_to_predict']] = 0
     
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch

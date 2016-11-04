@@ -182,7 +182,7 @@ def generate_images(X_test_time, params, model, sess,
             scale_to_unit_interval=False))
         ground_truth_images.save(results_dir + 'ground_truth_images_channel_{}.png'.format(i))
     
-    for i in range(H/2, H):
+    for i in range(H):
         for j in range(W):
             patches = get_wrapped_test_time_patches(X_test_time, i, j, p_i, p_j, H, W, p_dim)
             patches = mask_input(patches, p_i, p_j, channels_to_predict)
@@ -273,9 +273,8 @@ def main():
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
 
-    # zero out bottom half
-    X_test_time.shape[1] = H
-    X_test_time[:, H/2, :, params['channels_to_predict']] = 0
+    # zero out full
+    X_test_time[:, :, :, params['channels_to_predict']] = 0
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
