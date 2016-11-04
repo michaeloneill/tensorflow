@@ -121,7 +121,7 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, 
     X_test = data[indices[0.9*N:]]
 
     # save X_test for use at test time
-
+    
     print 'X for use at test time has shape is {}'.format(X_test.shape)
     with open(o_filename_prefix + '/test_time.npz', 'wb') as f:
         np.savez(f, X_test_time=X_test)
@@ -130,7 +130,7 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, 
 
         # plot first data example as 4*2 grid with rows snapshots and cols x/y components
         wind_images = Image.fromarray(tile_raster_images(
-            X=X_test[0].transpose(2, 0, 1).reshape(-1, H*W),
+            X=X_test_time[0].transpose(2, 0, 1).reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=(4,2),
             tile_spacing=(1,1),
@@ -260,19 +260,19 @@ if __name__=='__main__':
 
 
 
-    ############################# wind historical one month ######################################
+    # ############################# wind historical one month ######################################
 
-    channels_to_predict = [6,7]
+    # channels_to_predict = [6,7]
 
-    i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
+    # i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
 
-    # mlp
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical'
-    generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=True) 
+    # # mlp
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical'
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=True) 
 
-    #cnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_historical'
-    generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=False) 
+    # #cnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_historical'
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=False) 
 
 
     

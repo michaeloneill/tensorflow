@@ -79,7 +79,7 @@ def main():
 
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 1000,
+        'epochs': 10,
         'learning_rate':0.01,
         'dropout_keep_prob': None,
         'monitor_frequency': 10,
@@ -128,6 +128,11 @@ def main():
 
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
+
+    # zero out bottom half
+    X_test_time.shape[1] = H
+    X_test_time[:, H/2, :, params['channels_to_predict']] = 0
+    
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
