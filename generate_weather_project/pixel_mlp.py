@@ -182,7 +182,7 @@ def generate_images(X_test_time, params, model, sess,
             scale_to_unit_interval=False))
         ground_truth_images.save(results_dir + 'ground_truth_images_channel_{}.png'.format(i))
     
-    for i in range(H/2, H):
+    for i in range(H):
         for j in range(W):
             patches = get_wrapped_test_time_patches(X_test_time, i, j, p_i, p_j, H, W, p_dim)
             patches = mask_input(patches, p_i, p_j, channels_to_predict)
