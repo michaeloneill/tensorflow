@@ -92,8 +92,8 @@ def main():
     params = {
         'cnn': params_cnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 10, 10, 8], 'y_': [None, 512]},
-        'channels_to_predict': [6,7],
+        'inpt_shape': {'x': [None, 10, 10, 6], 'y_': [None, 512]},
+        'channels_to_predict': [4,5],
         'device':'/gpu:1',
         'results_dir': results_dir
     }
@@ -101,7 +101,7 @@ def main():
     
     # Load the training dataset
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn/train_time.npz'
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_deltas/train_time.npz'
 
     training_data = np.load(training_data_filename)
 
@@ -126,14 +126,10 @@ def main():
 
     # load the testing dataset
                               
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_deltas/test_time.npz'
 
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
-
-    # zero out prediction channels
-    X_test_time[:, :, :, params['channels_to_predict']] = 0
-    
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
@@ -142,8 +138,7 @@ def main():
     generate_images(X_test_time, params, model,
                     sess, p_i, p_j, p_dim,
                     tile_shape=tile_shape,
-                    channels_to_predict=params['channels_to_predict'],
-                    mode='cnn')
+                    usage='cnn')
 
     
 

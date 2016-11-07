@@ -2,7 +2,7 @@ import numpy as np
 import gzip, cPickle
 
 from common.plotting import tile_raster_images, images_to_tuple
-from common.utility_fns import sample_patches, mask_input
+from common.utility_fns import sample_patches, mask_input, unit_scale
 from PIL import Image
 import h5py
 
@@ -88,7 +88,7 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
                     data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 0]
                 else:
                     data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 1]
-            data = data[:, :, :, n_components:] # ignore fist time step channels
+            data = unit_scale(data[:, :, :, n_components:]) # rescale and ignore fist time step channels
             n_channels = data.shape[-1]
 
         # plot first data example as grid with rows snapshots and cols x/y components

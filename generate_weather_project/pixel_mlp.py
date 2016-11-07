@@ -180,6 +180,10 @@ def generate_images(X_test_time, params, model, sess,
             tile_spacing=(1,1),
             scale_to_unit_interval=False))
         ground_truth_images.save(params['results_dir'] + 'ground_truth_images_channel_{}.png'.format(i))
+
+    # zero out channels we want to predict
+    X_test_time[:, :, :, params['channels_to_predict']] = 0
+
     
     for i in range(H):
         for j in range(W):
@@ -282,9 +286,6 @@ def main():
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
-
-    # zero out full
-    X_test_time[:, :, :, params['channels_to_predict']] = 0
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10

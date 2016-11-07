@@ -85,8 +85,8 @@ def main():
     params_rnn = {
         'dim_hidden': 100,
         'num_layers': 1,
-        'seq_len': 4,
-        'dropout': True
+        'seq_len': 3,
+        'dropout': False
     }
     
     params_train = {
@@ -102,15 +102,15 @@ def main():
     params = {
         'rnn': params_rnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 4, 200], 'y_': [None, 512]},
-        'channels_to_predict': [6,7],
+        'inpt_shape': {'x': [None, 3, 200], 'y_': [None, 512]},
+        'channels_to_predict': [4,5],
         'device': '/gpu:1',
         'results_dir': results_dir
     }
 
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas/train_time.npz'    
     training_data = np.load(training_data_filename)
     
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -135,13 +135,10 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
-
-    # zero out full
-    X_test_time[:, :, :, params['channels_to_predict']] = 0
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
