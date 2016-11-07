@@ -160,36 +160,46 @@ def build_pixel_mlp_model(params):
 
 
 def generate_images(X_test_time, params, model, sess,
-                    p_i, p_j, p_dim, results_dir, unroll,
-                    tile_shape, channels_to_predict):
+                    p_i, p_j, p_dim,
+                    tile_shape, usage='mlp'):
 
     ''' 
-    X_test_time is [N x H x W x n_channels]
-    goal is to generate bottom half X_test_time
+    X_test_time is [N x H x W x depth]
 
     '''
     n = X_test_time.shape[0]
     H = X_test_time.shape[1]
     W = X_test_time.shape[2]
-    n_channels = X_test_time.shape[3]
+    depth = X_test_time.shape[3]
 
-    for i in channels_to_predict:    
+    for i in params['channels_to_predict']:    
         ground_truth_images = Image.fromarray(tile_raster_images(
             X=X_test_time[:, :, :, i].reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=tile_shape,
             tile_spacing=(1,1),
             scale_to_unit_interval=False))
-        ground_truth_images.save(results_dir + 'ground_truth_images_channel_{}.png'.format(i))
+        ground_truth_images.save(params['results_dir'] + 'ground_truth_images_channel_{}.png'.format(i))
     
     for i in range(H):
         for j in range(W):
             patches = get_wrapped_test_time_patches(X_test_time, i, j, p_i, p_j, H, W, p_dim)
-            patches = mask_input(patches, p_i, p_j, channels_to_predict)
-            if unroll: # mlp use
-                patches = patches.reshape(-1, p_dim*p_dim*n_channels)
-
-            X_test_time[:, i, j, channels_to_predict] = sess.run(model['preds'],
+            patches = mask_input(patches, p_i, p_j, params['channels_to_predict'])
+            if usage is 'mlp': 
+                patches = patches.reshape(-1, p_dim*p_dim*depth)
+            elif usage is 'rnn':
+                patches = patches.reshape(-1, p_dim, p_dim, params['rnn']['seq_len'], depth/params['rnn']['seq_len'])
+                # reshape to b x seq_len x p_dim x p_dim x n_channels:
+                patches = np.transpose(patches, [0, 3, 1, 2, 4])
+                # reshape to b x seq_len x p_dim*p_dim*n_channels:
+                patches = patches.reshape(-1, params['rnn']['seq_len'], p_dim*p_dim*depth/params['rnn']['seq_len'])
+            elif usage is 'cnn':
+                pass
+            else:
+                raise ValueError('usage must be \'cnn\', \'mlp\' or \'rnn\'')
+                
+                                       
+            X_test_time[:, i, j, params['channels_to_predict']] = sess.run(model['preds'],
                     feed_dict = {model['x']: patches,
                                  model['dropout_keep_prob']:1.0,
                                  model['is_training']:0.0
@@ -198,14 +208,14 @@ def generate_images(X_test_time, params, model, sess,
 
         print 'generated row {}'.format(i)
 
-    for i in channels_to_predict:    
+    for i in params['channels_to_predict']:    
         generated_images = Image.fromarray(tile_raster_images(
             X=X_test_time[:, :, :, i].reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=tile_shape,
             tile_spacing=(1,1),
             scale_to_unit_interval=False))
-        generated_images.save(results_dir + 'generated_images_channel_{}.png'.format(i))
+        generated_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
 
 
 def main():
@@ -281,10 +291,10 @@ def main():
     tile_shape = (2, 2) # for plotting results
 
 
-    generate_images(X_test_time, params['train'], model,
-                    sess, p_i, p_j, p_dim, params['results_dir'],
-                    unroll=True, tile_shape=tile_shape,
-                    channels_to_predict=params['channels_to_predict'])
+    generate_images(X_test_time, params, model,
+                    sess, p_i, p_j, p_dim,
+                    tile_shape=tile_shape,
+                    usage='mlp')
 
     
 

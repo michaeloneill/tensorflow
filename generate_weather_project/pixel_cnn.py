@@ -25,13 +25,15 @@ def build_pixel_cnn_model(params):
                             name='y_')
 
     with tf.name_scope('dropout_keep_prob'):
-        dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        dropout_keep_prob = tf.placeholder(tf.float32,
+                                           shape = (),
+                                           name='dropout_keep_prob')
 
     with tf.name_scope('is_training'):
         is_training = tf.placeholder(tf.float32,
                                      shape=(),
                                      name='is_training')
-    with tf.variable_scope('cnn'):
+    with tf.name_scope('cnn'):
         cnn_output = build_cnn(x, dropout_keep_prob, is_training, params['cnn'])
 
     with tf.name_scope('predictions'):
@@ -137,10 +139,11 @@ def main():
     p_dim = 10
     tile_shape = (2, 2)
 
-    generate_images(X_test_time, params['train'], model,
-                    sess, p_i, p_j, p_dim, params['results_dir'],
-                    unroll=False, tile_shape=tile_shape,
-                    channels_to_predict=params['channels_to_predict'])
+    generate_images(X_test_time, params, model,
+                    sess, p_i, p_j, p_dim,
+                    tile_shape=tile_shape,
+                    channels_to_predict=params['channels_to_predict'],
+                    mode='cnn')
 
     
 

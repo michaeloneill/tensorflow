@@ -1,5 +1,5 @@
 import tensorflow as tf
-from layers import fullyConnectedLayer, convPoolLayer
+from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
 import pdb
 
 ACTIVATIONS = {
@@ -9,6 +9,32 @@ ACTIVATIONS = {
     'softmax': tf.nn.softmax,
     'identity': tf.identity
     }
+
+
+def build_lstm_rnn(x, dropout_keep_prob, is_training, params):
+
+    with tf.name_scope('lstm'):
+        with tf.name_scope('lstm_cell'):
+            lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
+        if params['dropout']:
+            with tf.name_scope('dropped_cell'):
+                lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, input_keep_prob=dropout_keep_prob)
+        # with tf.name_scope('lstm_cell_bn'):
+        #     lstm_cell_bn = batch_norm_wrapper(lstm_cell, is_training, layer_name = 'lstm_layer')
+        with tf.name_scope('stacked_lstm'):
+            stacked_lstm = tf.nn.rnn_cell.MultiRNNCell([lstm_cell]*params['num_layers'], state_is_tuple=True)
+        b_size = tf.shape(x)[0]
+        state = stacked_lstm.zero_state(b_size, tf.float32)
+
+    with tf.name_scope('hiddens'):
+        hiddens = [None]*params['seq_len']
+        for t in range(params['seq_len']):
+            if t > 0:
+                tf.get_variable_scope().reuse_variables()
+            hiddens[t], state = stacked_lstm(x[:, t, :], state) # hiddens is s * [b x h]
+
+    return hiddens, state
+
 
 
 def build_cnn(x, dropout_keep_prob, is_training, params):

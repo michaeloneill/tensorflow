@@ -59,7 +59,7 @@ def get_train_time_patches_labels(images_train, images_val, images_test, params,
 
 
 
-def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=True):
+def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, usage='mlp'):
 
     ''' generates dataset for use at training time and one for use at test time '''
     
@@ -110,7 +110,8 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, 
         'patch_dim': 10,
         'n_bins': 256,
         'p_i': 9,
-        'p_j': 5
+        'p_j': 5,
+        'seq_len': 4 # for rnn usage
     }
 
     # split into train, test val
@@ -130,7 +131,7 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, 
 
         # plot first data example as 4*2 grid with rows snapshots and cols x/y components
         wind_images = Image.fromarray(tile_raster_images(
-            X=X_test_time[0].transpose(2, 0, 1).reshape(-1, H*W),
+            X=X_test[0].transpose(2, 0, 1).reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=(4,2),
             tile_spacing=(1,1),
@@ -190,11 +191,33 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, 
                 scale_to_unit_interval=False))
             wind_images.save(o_filename_prefix + '/images/wind_{}_masked_training_patches.png'.format(j))
             
-    if unroll: # for use in mlp
+    if usage is 'mlp': 
 
         X_train = X_train.reshape(params['n_patches_train'], -1)
         X_val = X_val.reshape(params['n_patches_val'], -1)
         X_test = X_test.reshape(params['n_patches_test'], -1)
+
+    elif usage is 'rnn':
+        
+        p_dim = X_train.shape[1]
+        X_train = X_train.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
+        # reshape to b x seq_len x p_dim x p_dim x n_components:
+        X_train = np.transpose(X_train, [0, 3, 1, 2, 4])
+        # reshape to b x seq_len x p_dim*p_dim*n_components:
+        X_train = X_train.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+
+        X_val = X_val.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
+        X_val = np.transpose(X_val, [0, 3, 1, 2, 4])
+        X_val = X_val.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+
+        X_test = X_test.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
+        X_test = np.transpose(X_test, [0, 3, 1, 2, 4])
+        X_test = X_test.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+
+    elif usage is 'cnn':
+        pass
+    else:
+        raise ValueError('usage must be \'cnn\', \'mlp\' or \'rnn\'')
 
          
     print 'X_train and y_train shapes: {}, {}'.format(X_train.shape, y_train.shape)
@@ -220,11 +243,11 @@ if __name__=='__main__':
 
     # # mlp
     # o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp_overfit'
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=True)
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, usage = 'mlp')
 
     # # cnn
     # o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn_overfit' 
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=False)
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, usage = 'cnn')
 
 
 
@@ -236,11 +259,11 @@ if __name__=='__main__':
 
     # # mlp
     # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_overfit_historical'
-    # generate_wind_datasets_historical(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=True) 
+    # generate_wind_datasets_historical(i_filenames, o_filename_prefix, channels_to_predict, historical=True, usage='mlp') 
 
     # #cnn
     # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_overfit_historical'
-    # generate_wind_datasets_historical(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=False) 
+    # generate_wind_datasets_historical(i_filenames, o_filename_prefix, channels_to_predict, historical=True, usage='cnn') 
 
     
 
@@ -252,27 +275,31 @@ if __name__=='__main__':
 
     # # mlp
     # o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_mlp'
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=True)
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, usage='mlp')
 
     # # cnn
     # o_filename_prefix = '../../data/generate_weather_project/wind/snapshot/256_bin/wind_201401_dataset_pixel_cnn' 
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, unroll=False)
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=False, usage='cnn')
 
 
 
     # ############################# wind historical one month ######################################
 
-    # channels_to_predict = [6,7]
+    channels_to_predict = [6,7]
 
-    # i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
+    i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
 
     # # mlp
     # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical'
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=True) 
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, usage='mlp') 
 
     # #cnn
     # o_filename_prefix = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_cnn_historical'
-    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, unroll=False) 
+    # generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, usage='cnn') 
+
+    # rnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn'
+    generate_wind_datasets(i_filenames, o_filename_prefix, channels_to_predict, historical=True, usage='rnn') 
 
 
     
