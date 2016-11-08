@@ -31,7 +31,8 @@ def build_lstm_rnn(x, dropout_keep_prob, is_training, params):
         for t in range(params['seq_len']):
             if t > 0:
                 tf.get_variable_scope().reuse_variables()
-            hiddens[t], state = stacked_lstm(x[:, t, :], state) # hiddens is s * [b x h]
+            inpt_bn = batch_norm_wrapper(x[:, t, :], is_training, layer_name='lstm_layer')
+            hiddens[t], state = stacked_lstm(inpt_bn, state) # hiddens is s * [b x h]
 
     return hiddens, state
 
