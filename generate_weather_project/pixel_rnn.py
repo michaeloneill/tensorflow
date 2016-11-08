@@ -42,6 +42,7 @@ def build_pixel_rnn_model(params):
         is_training = tf.placeholder(tf.float32,
                                      shape=(),
                                      name='is_training')
+    
     with tf.name_scope('lstm'):
         hiddens, _ = build_lstm_rnn(x, dropout_keep_prob, is_training, params['rnn'])
             
