@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
-from custom.lstm_cells import BNBasicLSTMCell
+from custom.lstm_cells import BNLSTMCell
 import pdb
 
 ACTIVATIONS = {
@@ -16,7 +16,7 @@ def build_bn_lstm_rnn(x, dropout_keep_prob, is_training, params):
 
     with tf.name_scope('lstm'):
         with tf.name_scope('lstm_cell'):
-            cell = BNBasicLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0, state_is_tuple=True)
+            cell = BNLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0) # state_is_tuple assumed True
         if params['dropout']:
             with tf.name_scope('dropped_cell'):
                 cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_keep_prob)

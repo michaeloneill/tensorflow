@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import pdb
 
-from common.model_components import build_lstm_rnn, build_train_graph
+from common.model_components import build_bn_lstm_rnn, build_train_graph
 from common.utility_fns import train
 from pixel_mlp import generate_images, get_preds, get_total_loss, get_channel_softmaxes, plot_channel_softmaxes_vs_ground_truth
 
@@ -44,7 +44,7 @@ def build_pixel_rnn_model(params):
                                      name='is_training')
     
     with tf.name_scope('lstm'):
-        hiddens, _ = build_lstm_rnn(x, dropout_keep_prob, is_training, params['rnn'])
+        hiddens, _ = build_bn_lstm_rnn(x, dropout_keep_prob, is_training, params['rnn'])
             
     with tf.name_scope('output'):
         outputs = hidden_to_output(hiddens[-1], params['rnn']['dim_hidden'],
