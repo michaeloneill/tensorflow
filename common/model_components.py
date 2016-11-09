@@ -1,5 +1,6 @@
 import tensorflow as tf
 from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
+from custom.lstm_cells import BNBasicLSTMCell
 import pdb
 
 ACTIVATIONS = {
@@ -11,11 +12,11 @@ ACTIVATIONS = {
     }
 
 
-def build_lstm_rnn(x, dropout_keep_prob, is_training, params):
+def build_bn_lstm_rnn(x, dropout_keep_prob, is_training, params):
 
     with tf.name_scope('lstm'):
         with tf.name_scope('lstm_cell'):
-            cell = tf.nn.rnn_cell.BasicLSTMCell(params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
+            cell = BNBasicLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0, state_is_tuple=True)
         if params['dropout']:
             with tf.name_scope('dropped_cell'):
                 cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_keep_prob)
@@ -30,8 +31,7 @@ def build_lstm_rnn(x, dropout_keep_prob, is_training, params):
         for t in range(params['seq_len']):
             if t > 0:
                 tf.get_variable_scope().reuse_variables()
-            inpt_bn = batch_norm_wrapper(x[:, t, :], is_training, layer_name='lstm_layer')
-            hiddens[t], state = cell(inpt_bn, state) # hiddens is s * [b x h]
+            hiddens[t], state = cell(x[:, t, :], state) # hiddens is s * [b x h]
 
     return hiddens, state
 

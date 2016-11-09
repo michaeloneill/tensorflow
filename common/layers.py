@@ -8,8 +8,8 @@ def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1
     with tf.name_scope(layer_name):
         with tf.name_scope('bn_scale'):
             scale = tf.Variable(tf.ones([inputs.get_shape()[-1]]))
-        with tf.name_scope('bn_beta'):
-            beta = tf.Variable(tf.zeros([inputs.get_shape()[-1]]))
+        with tf.name_scope('bn_offset'):
+            offset = tf.Variable(tf.zeros([inputs.get_shape()[-1]]))
         with tf.name_scope('pop_mean'):
             pop_mean = tf.Variable(tf.zeros([inputs.get_shape()[-1]]), trainable=False)
         with tf.name_scope('pop_var'):
@@ -20,18 +20,31 @@ def batch_norm_wrapper(inputs, is_training, layer_name, decay = 0.999, epsilon=1
         else:
             batch_mean, batch_var = tf.nn.moments(inputs,[0])
             
-        train_mean = tf.assign(pop_mean,
+        train_mean_op = tf.assign(pop_mean,
                                pop_mean * decay + batch_mean * (1 - decay))
-        train_var = tf.assign(pop_var,
+        train_var_op = tf.assign(pop_var,
                               pop_var * decay + batch_var * (1 - decay))
-        with tf.control_dependencies([train_mean, train_var]):
+        with tf.control_dependencies([train_mean_op, train_var_op]):
             train_time = tf.nn.batch_normalization(inputs,
-                batch_mean, batch_var, beta, scale, epsilon)
+                batch_mean, batch_var, offset, scale, epsilon)
 
         test_time = tf.nn.batch_normalization(inputs,
-                            pop_mean, pop_var, beta, scale, epsilon)
+                            pop_mean, pop_var, offset, scale, epsilon)
 
         return is_training*train_time + (1-is_training)*test_time
+
+        # alternative for boolean is_training
+        # def batch_statistics():
+        #     with tf.control_dependencies([train_mean_op, train_var_op]):
+        #         return tf.nn.batch_normalization(x, batch_mean, batch_var, offset, scale, epsilon)
+
+
+        # def population_statistics():
+        
+        #     return tf.nn.batch_normalization(x, pop_mean, pop_var, offset, scale, epsilon)
+
+        # return tf.cond(training, batch_statistics, population_statistics
+
 
 
 def convPoolLayer(inputs, num_outputs, kernel_size, stride, padding,
