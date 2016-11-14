@@ -84,9 +84,10 @@ class ConvRNNCell(object):
         return zeros
 
 
-class BasicConvLSTMCell(ConvRNNCell):
+class BNConvLSTMCell(ConvRNNCell):
 
-      """Basic Conv LSTM recurrent network cell.
+      """Basic Conv LSTM recurrent network cell based on tensorflow BasicLSTM cell
+      with batch normalisation as described in arxiv.org/abs/1603.09025
       adapted from https://github.com/loliverhennigh/Convolutional-LSTM-in-Tensorflow/blob/master/BasicConvLSTMCell.py
       """
 
@@ -139,7 +140,7 @@ def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
 
     """convolution:
     Args:
-      args: a list of 4D Tensors b x H x W x num_output_feature_maps (e.g. [x,h])
+      args: a list of 4D Tensors b x H x W x num_input_feature_maps (e.g. [x,h])
       filter_size: int tuple of filter height and width.
       num_output_feature_maps: int, number of output feature maps.
       scope: VariableScope for the created subgraph; defaults to "Linear".
@@ -150,7 +151,7 @@ def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
     Note: no biases - accounted for by offset in batch_norm
     """
 
-    total_depth = 0
+    total_input_depth = 0
     shapes = [a.get_shape().as_list() for a in args]
     for shape in shapes:
         if len(shape) != 4:
@@ -158,7 +159,7 @@ def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
         if not shape[3]:
             raise ValueError("Linear expects shape[3] of arguments: %s" % str(shapes))
         else:
-            total_depth += shape[3]
+            total_input_depth += shape[3]
 
     dtype = [a.dtype for a in args][0]
 
@@ -166,7 +167,7 @@ def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
     with tf.variable_scope(scope or "Conv"):
         filtr = tf.get_variable(
             "filter",
-            [filter_size[0], filter_size[1], total_depth, num_output_feature_maps],
+            [filter_size[0], filter_size[1], total_input_depth, num_output_feature_maps],
             initializer = tf.truncated_normal_initializer(),
             dtype=dtype
         )

@@ -12,11 +12,19 @@ ACTIVATIONS = {
     }
 
 
-def build_bn_lstm_rnn(x, dropout_keep_prob, is_training, params):
+def build_rnn(x, dropout_keep_prob, is_training, params):
 
-    with tf.name_scope('lstm'):
-        with tf.name_scope('lstm_cell'):
+    with tf.name_scope('cell'):
+        if params['cell_type'] == 'BasicLSTM':
+            cell = tf.nn.rnn_cell.BasicLSTMCell(params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
+        elif params['cell_type'] == 'BNLSTM':
             cell = BNLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0) # state_is_tuple assumed True
+        elif params['cell_type'] == 'BNConvLSTMCell':
+            cell = BNConvLSTMCell(params['shape'], params['filter_size'], params['num_output_feature_maps'],
+                                  is_training, forget_bias=1.0) # state_is_tuple assumed True
+        else:
+            raise ValueError('Cell type not recognised')
+        
         if params['dropout']:
             with tf.name_scope('dropped_cell'):
                 cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_keep_prob)
@@ -73,7 +81,7 @@ def build_cnn(x, dropout_keep_prob, is_training, params):
 
     # flatten output of last conv_layer and pass to fc layers
 
-    flattened_dim = prev_layer.get_shape()[1].value*prev_layer.get_shape()[2].value*prev_layer.get_shape()[3].value
+    flattened_dim = np.prod(prev_layer.get_shape().as_list()[1:])
     flattened = tf.reshape(prev_layer, [-1, flattened_dim])
     output = build_mlp(flattened, dropout_keep_prob, is_training, params['fc_params'])
         

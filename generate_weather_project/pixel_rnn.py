@@ -9,23 +9,32 @@ from pixel_mlp import generate_images, get_preds, get_total_loss, get_channel_so
 import os
 
 
-def hidden_to_output(hiddens, dim_hidden, dim_output):
+def hidden_to_output(hiddens, dim_output):
 
     """
-    hiddens s * [bxh] or [bxh]
-    output (s*b) x dim_output or b*dim_output
+    
+    hiddens can be s * [bxh] or [bxh] (fully connected cell layers)
+    or it can be s*[bxHxWxnum_output_feature_maps] or [bxHxWxnum_output_feature_maps] (convolutional layers) 
 
-    """
+    Either way
+      output (s*b) x dim_output or b*dim_output
+
+    """        
+
+    if type(hiddens) is list:
+        hiddens = tf.concat(0, hiddens)
+    if len(hiddens.get_shape().as_list) == 4: # convolutional cell
+        dim_hidden = np.prod(hiddens.get_shape().as_list()[1:])
+        hiddens = tf.reshape(packed_hiddens, [-1, dim_hidden])
+    else:
+        assert len(hiddens.get_shape().as_list()) == 2
+        dim_hidden = hiddens.get_shape()[-1]
 
     stdev = 1.0/np.sqrt(dim_output)
     W_out = tf.Variable(tf.random_uniform([dim_hidden, dim_output], -stdev, stdev))
 
-    if type(hiddens) is list:
-        packed_hiddens = tf.concat(0, hiddens)
-        return tf.matmul(packed_hiddens, W_out)
-    else:
-        return tf.matmul(hiddens, W_out)
-
+    return tf.matmul(hiddens, W_out)
+                                       
 
 
 def build_pixel_rnn_model(params):
@@ -44,11 +53,10 @@ def build_pixel_rnn_model(params):
                                      name='is_training')
     
     with tf.name_scope('lstm'):
-        hiddens, _ = build_bn_lstm_rnn(x, dropout_keep_prob, is_training, params['rnn'])
+        hiddens, _ = build_rnn(x, dropout_keep_prob, is_training, params['rnn'])
             
     with tf.name_scope('output'):
-        outputs = hidden_to_output(hiddens[-1], params['rnn']['dim_hidden'],
-                                   params['inpt_shape']['y_'][1]) # (s*b) x dim_output
+        outputs = hidden_to_output(hiddens[-1], params['inpt_shape']['y_'][1]) # (s*b) x dim_output
 
     with tf.name_scope('predictions'):
         preds = get_preds(outputs, len(params['channels_to_predict']))
@@ -84,6 +92,7 @@ def main():
         os.makedirs(results_dir)
     
     params_rnn = {
+        'cell_type': 'BNLSTMCell',
         'dim_hidden': 100,
         'num_layers': 1,
         'seq_len': 3,
