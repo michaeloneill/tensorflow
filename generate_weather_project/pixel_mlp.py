@@ -191,12 +191,13 @@ def generate_images(X_test_time, params, model, sess,
             patches = mask_input(patches, p_i, p_j, params['channels_to_predict'])
             if usage is 'mlp': 
                 patches = patches.reshape(-1, p_dim*p_dim*depth)
-            elif usage is 'rnn':
+            elif usage is 'rnn' or 'crnn':
                 patches = patches.reshape(-1, p_dim, p_dim, params['rnn']['seq_len'], depth/params['rnn']['seq_len'])
                 # reshape to b x seq_len x p_dim x p_dim x n_channels:
                 patches = np.transpose(patches, [0, 3, 1, 2, 4])
-                # reshape to b x seq_len x p_dim*p_dim*n_channels:
-                patches = patches.reshape(-1, params['rnn']['seq_len'], p_dim*p_dim*depth/params['rnn']['seq_len'])
+                if usage is 'rnn':
+                    # reshape to b x seq_len x p_dim*p_dim*n_channels:
+                    patches = patches.reshape(-1, params['rnn']['seq_len'], p_dim*p_dim*depth/params['rnn']['seq_len'])
             elif usage is 'cnn':
                 pass
             else:

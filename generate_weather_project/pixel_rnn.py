@@ -2,14 +2,14 @@ import tensorflow as tf
 import numpy as np
 import pdb
 
-from common.model_components import build_bn_lstm_rnn, build_train_graph
+from common.model_components import build_rnn, build_train_graph
 from common.utility_fns import train
 from pixel_mlp import generate_images, get_preds, get_total_loss, get_channel_softmaxes, plot_channel_softmaxes_vs_ground_truth
 
 import os
 
 
-def hidden_to_output(hiddens, dim_output):
+def hidden_to_output(hiddens, dim_output, activation = tf.identity):
 
     """
     
@@ -23,17 +23,17 @@ def hidden_to_output(hiddens, dim_output):
 
     if type(hiddens) is list:
         hiddens = tf.concat(0, hiddens)
-    if len(hiddens.get_shape().as_list) == 4: # convolutional cell
+    if len(hiddens.get_shape().as_list()) == 4: # convolutional cell
         dim_hidden = np.prod(hiddens.get_shape().as_list()[1:])
-        hiddens = tf.reshape(packed_hiddens, [-1, dim_hidden])
+        hiddens = tf.reshape(hiddens, [-1, dim_hidden])
     else:
         assert len(hiddens.get_shape().as_list()) == 2
-        dim_hidden = hiddens.get_shape()[-1]
+        dim_hidden = hiddens.get_shape()[-1].value
 
     stdev = 1.0/np.sqrt(dim_output)
     W_out = tf.Variable(tf.random_uniform([dim_hidden, dim_output], -stdev, stdev))
 
-    return tf.matmul(hiddens, W_out)
+    return activation(tf.matmul(hiddens, W_out))
                                        
 
 
@@ -56,7 +56,7 @@ def build_pixel_rnn_model(params):
         hiddens, _ = build_rnn(x, dropout_keep_prob, is_training, params['rnn'])
             
     with tf.name_scope('output'):
-        outputs = hidden_to_output(hiddens[-1], params['inpt_shape']['y_'][1]) # (s*b) x dim_output
+        outputs = hidden_to_output(hiddens[-1], params['inpt_shape']['y_'][1], params['rnn']['out_activation']) # (s*b) x dim_output
 
     with tf.name_scope('predictions'):
         preds = get_preds(outputs, len(params['channels_to_predict']))

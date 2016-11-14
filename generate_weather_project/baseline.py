@@ -1,21 +1,22 @@
 import numpy as np
 import pdb
+import tensorflow as tf
 
-from common.model_components import build_rnn
+from common.model_components import build_rnn, build_train_graph
 from common.utility_fns import train
-from pixel_mlp import generate_images, plot_channel_softmaxes_vs_ground_truth
 from pixel_rnn import hidden_to_output
-
+from PIL import Image
+from common.plotting import tile_raster_images
 import os
 
-def get_preds(X_test_time, y_test_time, params, model, sess, tile_shape):
+def get_preds(X_test_time, y_test_time, params, model, sess, tile_shape, img_shape):
 
-    ''' X_test_time is [N x seq_len x H x W x num_channels]
+    ''' X_test_time is [N x seq_len x H*W*num_channels]
+    y_test_time is [N x H*W*num_channels]
     '''
-
-    n, s, H, W, n_channels = X_test_time.shape
-
+    H, W, n_channels = img_shape
     y_test_time = y_test_time.reshape(-1, H, W, n_channels)
+
     for i in range(n_channels):    
         ground_truth_images = Image.fromarray(tile_raster_images(
             X=y_test_time[:, :, :, i].reshape(-1, H*W),
@@ -27,66 +28,21 @@ def get_preds(X_test_time, y_test_time, params, model, sess, tile_shape):
 
 
     output = sess.run(model['logits'],
-                      feed_dict = {model['x']: X_test_time.reshape(-1, s, H*W*n_channels),
-                                   model['dropout_keep_prob']: 1.0,
-                                   model['is_training']: 0.0
-                      }
-    )
-    
-    output = output.reshape(-1, H, W, n_channels)
-    for i in range(num_channels):
-        generated_images = Image.fromarray(tile_raster_images(
-            X=output[:, :, :, i].reshape(-1, H*W),
-            img_shape=(H, W),
-            tile_shape=tile_shape,
-            tile_spacing=(1,1),
-            scale_to_unit_interval=False))
-        ground_truth_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
-
-
-
-def get_preds(X_test_time, params, model, sess, tile_shape):
-
-    ''' X_test_time is [N x H x W x seq_len*num_channels]
-    '''
-
-    n, H, W, depth = X_test_time.shape
-    
-    for i in params['channels_to_predict']:    
-        ground_truth_images = Image.fromarray(tile_raster_images(
-            X=X_test_time[:, :, :, i].reshape(-1, H*W),
-            img_shape=(H, W),
-            tile_shape=tile_shape,
-            tile_spacing=(1,1),
-            scale_to_unit_interval=False))
-        ground_truth_images.save(params['results_dir'] + 'ground_truth_images_channel_{}.png'.format(i))
-
-    # remove channels we want to predict
-    X_test_time = np.delete(X_test_time, params['channels_to_predict'], 3)
-    depth = X_test_time.shape[-1]
-
-    # reshape to N x seq_len x H x W x num_channels
-    num_channels = depth/params['rnn']['seq_len']
-    X_test_time.reshape(-1, H, W, params['rnn']['seq_len'], num_channels)
-    X_test_time.transpose(X_test_time, [0, 3, 1, 2, 4])
-    X_test_time.reshape(-1, params['rnn']['seq_len'], H*W*num_channels)
-
-    output = sess.run(model['logits'],
                       feed_dict = {model['x']: X_test_time,
                                    model['dropout_keep_prob']: 1.0,
                                    model['is_training']: 0.0
                       }
     )
     
-    output = output.reshape(-1, H, W, num_channels)
-    for i in range(num_channels):
+    output = output.reshape(-1, H, W, n_channels)
+    for i in range(n_channels):
         generated_images = Image.fromarray(tile_raster_images(
             X=output[:, :, :, i].reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=tile_shape,
             tile_spacing=(1,1),
             scale_to_unit_interval=False))
-        ground_truth_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
+        generated_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
 
 
 def get_loss(logits, targets):
@@ -134,9 +90,6 @@ def build_baseline_rnn_model(params):
 
 
 
-
-
-
 def main():
 
     results_dir = input('Enter results directory: ')
@@ -144,16 +97,17 @@ def main():
         os.makedirs(results_dir)
     
     params_rnn = {
-        'cell_type': 'BasicLSTMCell',
-        'dim_hidden': 181*360*2,
+        'cell_type': 'BasicLSTM',
+        'dim_hidden': 100,
         'num_layers': 1,
         'seq_len': 2,
+        'out_activation': tf.sigmoid,
         'dropout': False
     }
     
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 10,
+        'epochs': 1000,
         'learning_rate': 0.01,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
@@ -165,7 +119,6 @@ def main():
         'rnn': params_rnn,
         'train': params_train,
         'inpt_shape': {'x': [None, 2, 181*360*2], 'y_': [None, 181*360*2]},
-        'channels_to_predict': [4,5],
         'device': '/gpu:1',
         'results_dir': results_dir
     }
@@ -178,34 +131,67 @@ def main():
     val_set = [training_data['X_val'], training_data['y_val']]
     test_set = [training_data['X_test'], training_data['y_test']]
                                 
-
-    model = build_pixel_rnn_model(params)
+    model = build_baseline_rnn_model(params)
 
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
     train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
-    # investigate softmax vs ground truth for selected examples that were trained on
-    n = 3
-    n_bins = params['inpt_shape']['y_'][1]/len(params['channels_to_predict'])
-    ground_truth = np.reshape(train_set[1], [-1, n_bins, len(params['channels_to_predict'])])
-    
-    plot_channel_softmaxes_vs_ground_truth(train_set[0][:n], ground_truth[:n, :, :],
-                                           model, sess, params['results_dir'])
+    # for plotting results
+    tile_shape = (2, 2)
+    img_shape = (181, 360, 2)
 
-    # load the testing dataset
-
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas/test_time.npz'
-    
-    testing_data = np.load(testing_data_filename)
-    X_test_time = testing_data['X_test_time']
-    
-    tile_shape = (2, 2) # for plotting results
-
-    get_preds(X_test_time, params, model, sess, tile_shape)
+    get_preds(test_set[0], test_set[1], params, model, sess, tile_shape, img_shape)
 
                                 
 
 if __name__=='__main__':
     main()
+
+
+
+
+# def get_preds(X_test_time, params, model, sess, tile_shape):
+
+#     ''' X_test_time is [N x H x W x seq_len*num_channels]
+#     '''
+
+#     n, H, W, depth = X_test_time.shape
+    
+#     for i in params['channels_to_predict']:    
+#         ground_truth_images = Image.fromarray(tile_raster_images(
+#             X=X_test_time[:, :, :, i].reshape(-1, H*W),
+#             img_shape=(H, W),
+#             tile_shape=tile_shape,
+#             tile_spacing=(1,1),
+#             scale_to_unit_interval=False))
+#         ground_truth_images.save(params['results_dir'] + 'ground_truth_images_channel_{}.png'.format(i))
+
+#     # remove channels we want to predict
+#     X_test_time = np.delete(X_test_time, params['channels_to_predict'], 3)
+#     depth = X_test_time.shape[-1]
+
+#     # reshape to N x seq_len x H x W x num_channels
+#     num_channels = depth/params['rnn']['seq_len']
+#     X_test_time.reshape(-1, H, W, params['rnn']['seq_len'], num_channels)
+#     X_test_time.transpose(X_test_time, [0, 3, 1, 2, 4])
+#     X_test_time.reshape(-1, params['rnn']['seq_len'], H*W*num_channels)
+
+#     output = sess.run(model['logits'],
+#                       feed_dict = {model['x']: X_test_time,
+#                                    model['dropout_keep_prob']: 1.0,
+#                                    model['is_training']: 0.0
+#                       }
+#     )
+    
+#     output = output.reshape(-1, H, W, num_channels)
+#     for i in range(num_channels):
+#         generated_images = Image.fromarray(tile_raster_images(
+#             X=output[:, :, :, i].reshape(-1, H*W),
+#             img_shape=(H, W),
+#             tile_shape=tile_shape,
+#             tile_spacing=(1,1),
+#             scale_to_unit_interval=False))
+#         ground_truth_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
+

@@ -27,7 +27,7 @@ class BNLSTMCell(tf.nn.rnn_cell.RNNCell):
             # change bias argument to False since batch_norm will add bias via shift
             # but forget_bias set manually to reduce forgetting at start of training when shift hasn't been learned
             # input-hidden and hidden-hidden weights built as one variable, to be split into portions for each gate
-            concat = tf.nn.rnn_cell._linear([x, h], 4*self._num_units, False)
+            concat = tf.nn.rnn_cell._linear([x, h], 4*self._num_units, bias=False)
 
             i, j, f, o = tf.split(1, 4, concat) 
 
@@ -80,60 +80,65 @@ class ConvRNNCell(object):
         """
         shape = self.shape
         num_output_feature_maps = self.num_output_feature_maps
-        zeros = tf.zeros([b_size, shape[0], shape[1], num_output_feature_maps * 2])
+        zeros = (tf.zeros([b_size, shape[0], shape[1], num_output_feature_maps]),
+                 tf.zeros([b_size, shape[0], shape[1], num_output_feature_maps]))
+
         return zeros
 
 
 class BNConvLSTMCell(ConvRNNCell):
 
-      """Basic Conv LSTM recurrent network cell based on tensorflow BasicLSTM cell
-      with batch normalisation as described in arxiv.org/abs/1603.09025
-      adapted from https://github.com/loliverhennigh/Convolutional-LSTM-in-Tensorflow/blob/master/BasicConvLSTMCell.py
-      """
+    """Basic Conv LSTM recurrent network cell based on tensorflow BasicLSTM cell
+    with batch normalisation as described in arxiv.org/abs/1603.09025
+    adapted from https://github.com/loliverhennigh/Convolutional-LSTM-in-Tensorflow/blob/master/BasicConvLSTMCell.py
+    """
 
-      def __init__(self, shape, filter_size, num_output_feature_maps, is_training, forget_bias=1.0):
-          """Initialize the basic Conv LSTM cell.
-          Args:
-            shape: int tuple that is height and width of cell
-            filter_size: int tuple thats the height and width of the filter
-            num_output_feature_maps: int thats the depth of the cell 
-            forget_bias: float, The bias added to forget gates (see above).
-          """
-          self.shape = shape # (H, W)
-          self.filter_size = filter_size
-          self.num_output_feature_maps = num_output_feature_maps
-          self._is_training = is_training
-          self._forget_bias = forget_bias
+    def __init__(self, shape, filter_size, num_output_feature_maps, is_training, forget_bias=1.0):
+        """Initialize the basic Conv LSTM cell.
+        Args:
+        shape: int tuple that is height and width of cell
+        filter_size: int tuple thats the height and width of the filter
+        num_output_feature_maps: int thats the depth of the cell 
+        forget_bias: float, The bias added to forget gates (see above).
+        """
+        self.shape = shape # (H, W)
+        self.filter_size = filter_size
+        self.num_output_feature_maps = num_output_feature_maps
+        self._is_training = is_training
+        self._forget_bias = forget_bias
 
-        @property
-        def state_size(self):
-            return LSTMStateTuple(self._num_units, self._num_units)
-        @property
-        def output_size(self):
-            return self._num_units
+    @property
+    def state_size(self):
+        return tf.nn.rnn_cell.LSTMStateTuple((self.shape[0], self.shape[1], self.num_output_feature_maps),
+                                             (self.shape[0], self.shape[1], self.num_output_feature_maps))
+    @property
+    def output_size(self):
+        return (self.shape[0], self.shape[1], self.num_output_feature_maps)
 
-        def __call__(self, x, state, scope=None):
+    def __call__(self, x, state, scope=None):
 
-            """Long short-term memory cell (LSTM)."""
-            with tf.variable_scope(scope or type(self).__name__): 
-                c, h = state
+        """Long short-term memory cell (LSTM)."""
+        with tf.variable_scope(scope or type(self).__name__):
+            
+            c, h = state
 
-                concat = _conv_linear([x, h], self.filter_size, self.num_output_feature_maps * 4, True)
-                i, j, f, o = tf.split(3, 4, concat) # split along output_feature_maps
+            concat = _conv_linear([x, h], self.filter_size, self.num_output_feature_maps * 4)
+            i, j, f, o = tf.split(3, 4, concat) # split along output_feature_maps
 
-                # add batch_norm to each gate
+            # # add batch_norm to each gate
 
-                i = batch_norm(i, 'i/', self._is_training, conv = True)
-                j = batch_norm(j, 'j/', self._is_training, conv = True)
-                f = batch_norm(f, 'f/', self._is_training, conv = True)
-                o = batch_norm(o, 'o/', self._is_training, conv = True)
+            # i = batch_norm(i, 'i/', self._is_training, conv = True)
+            # j = batch_norm(j, 'j/', self._is_training, conv = True)
+            # f = batch_norm(f, 'f/', self._is_training, conv = True)
+            # o = batch_norm(o, 'o/', self._is_training, conv = True)
                 
-                new_c = c * tf.nn.sigmoid(f + self._forget_bias) + tf.nn.sigmoid(i) * tf.tanh(j)
-                new_h = tf.tanh(batch_norm(new_c, 'new_h/', self._is_training, conv=True)) * tf.sigmoid(o)
+            new_c = c * tf.nn.sigmoid(f + self._forget_bias) + tf.nn.sigmoid(i) * tf.tanh(j)
+            # new_h = tf.tanh(batch_norm(new_c, 'new_h/', self._is_training, conv=True)) * tf.sigmoid(o)
+            new_h = tf.tanh(new_c)* tf.sigmoid(o)
                 
-                new_state = LSTMStateTuple(new_c, new_h)
+            new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
 
-                return new_h, new_state
+            return new_h, new_state
 
 
 def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
@@ -186,7 +191,7 @@ def batch_norm(x, name_scope, is_training, epsilon=1e-3, decay=0.999, conv=False
 
     with tf.variable_scope(name_scope):
 
-        size = x.get_shape().as_list()[1]
+        size = x.get_shape().as_list()[-1]
         scale = tf.get_variable('scale', [size], initializer = tf.constant_initializer(1.0))
         offset = tf.get_variable('offset', [size], initializer = tf.constant_initializer(0.0))
 

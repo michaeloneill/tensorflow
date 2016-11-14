@@ -1,6 +1,6 @@
 import tensorflow as tf
 from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
-from custom.lstm_cells import BNLSTMCell
+from custom.lstm_cells import BNLSTMCell, BNConvLSTMCell
 import pdb
 
 ACTIVATIONS = {
@@ -28,8 +28,8 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
         if params['dropout']:
             with tf.name_scope('dropped_cell'):
                 cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_keep_prob)
-        with tf.name_scope('stacked_lstm'):
-            cell = tf.nn.rnn_cell.MultiRNNCell([cell]*params['num_layers'], state_is_tuple=True)
+        # with tf.name_scope('stacked_lstm'):
+        #     cell = tf.nn.rnn_cell.MultiRNNCell([cell]*params['num_layers'], state_is_tuple=True)
         b_size = tf.shape(x)[0]
         with tf.name_scope('init_state'):
             state = cell.zero_state(b_size, tf.float32)
@@ -39,7 +39,7 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
         for t in range(params['seq_len']):
             if t > 0:
                 tf.get_variable_scope().reuse_variables()
-            hiddens[t], state = cell(x[:, t, :], state) # hiddens is s * [b x h]
+            hiddens[t], state = cell(x[:, t], state) # hiddens is s * [b x h]
 
     return hiddens, state
 

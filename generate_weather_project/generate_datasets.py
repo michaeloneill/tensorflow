@@ -121,12 +121,8 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
     X_val = data[indices[0.8*N:0.9*N]]
     X_test = data[indices[0.9*N:]]
 
-    # save X_test for use at test time
+    # plot and save X_test for use at test time
     
-    print 'X for use at test time has shape is {}'.format(X_test.shape)
-    with open(o_filename_prefix + '/test_time.npz', 'wb') as f:
-        np.savez(f, X_test_time=X_test)
-
     if historical:
 
         # plot first data example as 4*2 grid with rows snapshots and cols x/y components
@@ -149,7 +145,11 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
                 scale_to_unit_interval=False))
             wind_images.save(o_filename_prefix + '/images/X_test_time_channel_{}.png'.format(i))
 
+    print 'X for use at test time has shape {}'.format(X_test.shape)
+    with open(o_filename_prefix + '/test_time.npz', 'wb') as f:
+        np.savez(f, X_test_time=X_test)
 
+        
     # get train time patches and labels
     
     X_train, y_train, X_val, y_val, X_test, y_test = get_train_time_patches_labels(X_train, X_val, X_test, params)
@@ -197,27 +197,29 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
         X_val = X_val.reshape(params['n_patches_val'], -1)
         X_test = X_test.reshape(params['n_patches_test'], -1)
 
-    elif usage is 'rnn':
+    elif usage is 'rnn' or 'crnn':
         
         p_dim = X_train.shape[1]
         X_train = X_train.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
         # reshape to b x seq_len x p_dim x p_dim x n_components:
         X_train = np.transpose(X_train, [0, 3, 1, 2, 4])
-        # reshape to b x seq_len x p_dim*p_dim*n_components:
-        X_train = X_train.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
 
         X_val = X_val.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
         X_val = np.transpose(X_val, [0, 3, 1, 2, 4])
-        X_val = X_val.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
-
+        
         X_test = X_test.reshape(-1, p_dim, p_dim, params['seq_len'], n_channels/params['seq_len'])
         X_test = np.transpose(X_test, [0, 3, 1, 2, 4])
-        X_test = X_test.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+
+        if usage is 'rnn':
+            # reshape to b x seq_len x p_dim*p_dim*n_components:
+            X_train = X_train.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+            X_val = X_val.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
+            X_test = X_test.reshape(-1, params['seq_len'], p_dim*p_dim*n_channels/params['seq_len'])
 
     elif usage is 'cnn':
         pass
     else:
-        raise ValueError('usage must be \'cnn\', \'mlp\' or \'rnn\'')
+        raise ValueError('usage must be \'cnn\', \'mlp\', \'rnn\' or \'crnn\'')
 
          
     print 'X_train and y_train shapes: {}, {}'.format(X_train.shape, y_train.shape)
@@ -228,8 +230,67 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
     with open(o_filename_prefix+'/train_time.npz', 'wb') as f:
         np.savez(f, X_train=X_train, y_train=y_train, X_val=X_val,
                  y_val=y_val, X_test=X_test, y_test=y_test)
+    
+
+def generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len):
+
+    data = []
+    for f in i_filenames:
+        d = h5py.File(f, 'r')['Dataset1']
+        d = np.transpose(d, [0, 2, 3, 1]) 
+        n, H, W, n_components = d.shape
+        assert n % 4 == 0 # data should be recorded at 6 hourly intervals
+        d = np.array([np.concatenate(x, 2) for x in np.split(d, n/4)]) # [n/4, H, W, 4*n_components]
+        data.append(d)
+
+    data = np.concatenate(data)
+    N, H, W, n_channels = data.shape
+    
+
+    for i in range(2, n_channels):
+        if i%2 == 0:
+            data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 0]
+        else:
+            data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 1]
+    data = unit_scale(data[:, :, :, n_components:]) # rescale and ignore fist time step channels
+    n_channels = data.shape[-1]
+
+    # plot first data example as grid with rows snapshots and cols x/y components
+    n_rows = n_channels/n_components
+    n_cols = n_components
+    wind_images = Image.fromarray(tile_raster_images(
+        X=data[0].transpose(2, 0, 1).reshape(-1, H*W),
+        img_shape=(H, W),
+        tile_shape=(n_rows, n_cols),
+        tile_spacing=(1,1),
+        scale_to_unit_interval=False))
+    wind_images.save(o_filename_prefix + '/images/sample_0_historical.png')
 
 
+    data = data.reshape(-1, H, W, seq_len, n_channels/seq_len)
+    data = np.transpose(data, [0, 3, 1, 2, 4])
+    data = data.reshape(-1, seq_len, H*W*n_channels/seq_len)
+
+    # split into train, test val
+
+    indices = np.random.permutation(N)
+    X_train = data[indices[:0.8*N], :-1]
+    y_train = data[indices[:0.8*N], -1]
+    X_val = data[indices[0.8*N:0.9*N], :-1]
+    y_val = data[indices[0.8*N:0.9*N], -1]
+    X_test = data[indices[0.9*N:], :-1]
+    y_test = data[indices[0.9*N:], -1]
+    
+
+    print 'X_train and y_train shapes: {}, {}'.format(X_train.shape, y_train.shape)
+    print 'X_val and y_val shapes: {}, {}'.format(X_val.shape, y_val.shape)
+    print 'X_test and y_test shapes: {}, {}'.format(X_test.shape, y_test.shape)
+
+    
+    with open(o_filename_prefix+'/train_time.npz', 'wb') as f:
+        np.savez(f, X_train=X_train, y_train=y_train, X_val=X_val,
+                 y_val=y_val, X_test=X_test, y_test=y_test)
+        
 
 if __name__=='__main__':
 
@@ -312,17 +373,29 @@ if __name__=='__main__':
 
     ################################ wind historical one month deltas ############################
 
+    # i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
+    
+    # #cnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_deltas'
+    # generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='cnn') 
+
+    # # rnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas'
+    # generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='rnn') 
+
+    # crnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_crnn_deltas'
+    # generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='crnn') 
+
+    ############################## wind historical one month baseline ################################
+
+
     i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
     
-    #cnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_cnn_deltas'
-    generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='cnn') 
-
     # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas'
-    generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='rnn') 
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas_baseline'
+    generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len=3) 
 
-    
     
 
 
