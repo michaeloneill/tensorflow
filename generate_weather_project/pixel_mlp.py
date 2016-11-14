@@ -181,6 +181,9 @@ def generate_images(X_test_time, params, model, sess,
             scale_to_unit_interval=False))
         ground_truth_images.save(params['results_dir'] + 'ground_truth_images_channel_{}.png'.format(i))
 
+
+    ground_truth = X_test_time[:, :, :, params['channels_to_predict']]
+    
     # zero out channels we want to predict
     X_test_time[:, :, :, params['channels_to_predict']] = 0
 
@@ -202,8 +205,8 @@ def generate_images(X_test_time, params, model, sess,
                 pass
             else:
                 raise ValueError('usage must be \'cnn\', \'mlp\' or \'rnn\'')
-                
-                                       
+
+            # reuse storage      
             X_test_time[:, i, j, params['channels_to_predict']] = sess.run(model['preds'],
                     feed_dict = {model['x']: patches,
                                  model['dropout_keep_prob']:1.0,
@@ -221,6 +224,11 @@ def generate_images(X_test_time, params, model, sess,
             tile_spacing=(1,1),
             scale_to_unit_interval=False))
         generated_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
+
+    # compute squared error loss
+
+    sq_loss = np.mean(np.sum(np.square(X_test_time[:, :, :, params['channels_to_predict']] - ground_truth), axis=[1, 2, 3]))
+    print 'per sample sq_loss between ground truth and predictions is {}'.format(sq_loss)
 
 
 def main():
