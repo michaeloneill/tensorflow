@@ -74,6 +74,7 @@ def run_test(test_set, params, model, sess):
 
 def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
+    saver = tf.train.Saver()
     merged = tf.merge_all_summaries()
     train_writer = tf.train.SummaryWriter(results_dir+'logs/train', sess.graph)
     val_writer = tf.train.SummaryWriter(results_dir+'logs/val', sess.graph)
@@ -82,7 +83,9 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
     nBatchVal = val_set[0].shape[0]/params['miniBatchSize']
     nBatchTest = val_set[0].shape[0]/params['miniBatchSize']
 
-    agg_loss_train = 0.0
+    best_val_loss = np.inf
+    best_model_file = None
+    
     print 'starting training...'
     for epoch in range(params['epochs']):
         for miniBatchIndex in range(nBatchTrain):
@@ -92,15 +95,21 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
             train_writer.add_summary(summary, iteration)
             
             if (iteration+1)%params['monitor_frequency'] == 0:
+
                 print 'train loss for minibatch {0}/{1} epoch {2} is: {3:.2f}'.format(
                     miniBatchIndex+1, nBatchTrain, epoch+1, loss_train)
+                
                 loss_val, summary = run_val(val_set, params, model, sess, merged) 
                 val_writer.add_summary(summary, iteration) 
                 print 'correpsonding val loss is: {:.2f}'.format(loss_val)
 
-    loss_test = run_test(val_set, params, model, sess) 
-    print 'Training complete. Final loss on test set is: {:.2f}'.format(loss_test)
+                if loss_val < best_val_loss:
+                    best_val_loss = loss_val
+                    best_model_file = saver.save(sess, results_dir+'models/model', global_step=iteration)
 
+    saver.restore(sess, best_model_file)
+    loss_test = run_test(val_set, params, model, sess) 
+    print 'Training complete. Test set loss at lowest validation loss is: {:.2f}'.format(loss_test)
 
 
 def unit_scale(X):

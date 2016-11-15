@@ -5,6 +5,7 @@ from common.plotting import tile_raster_images, images_to_tuple
 from common.utility_fns import sample_patches, mask_input, unit_scale
 from PIL import Image
 import h5py
+import os
 
 import pdb
 
@@ -69,7 +70,8 @@ def generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=Fa
         d = np.transpose(d, [0, 2, 3, 1]) 
         n, H, W, n_components = d.shape
         if historical:
-            assert n % 4 == 0 # data should be recorded at 6 hourly intervals
+            if n % 4 != 0: # data should be recorded at 6 hourly intervals
+                continue
             d = np.array([np.concatenate(x, 2) for x in np.split(d, n/4)]) # [n/4, H, W, 4*n_components]
         data.append(d)
 
@@ -296,9 +298,9 @@ if __name__=='__main__':
 
 
     params = {
-        'n_patches_train': 40000,
-        'n_patches_val': 5000,
-        'n_patches_test': 5000,
+        'n_patches_train': 400000,
+        'n_patches_val': 50000,
+        'n_patches_test': 50000,
         'patch_dim': 10,
         'n_bins': 256,
         'p_i': 9,
@@ -384,17 +386,35 @@ if __name__=='__main__':
     # generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='rnn') 
 
     # crnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_crnn_deltas'
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_crnn_deltas'
     # generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='crnn') 
 
-    ############################## wind historical one month baseline ################################
+    # ############################## wind historical one month baseline ################################
 
 
-    i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
+    # i_filenames = ['../../data/generate_weather_project/wind/raw/wind_201401.h5']
     
+    # # rnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas_baseline'
+    # generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len=3) 
+
+
+    # ######################## wind historical many months ##############################################
+
+    path = '../../data/generate_weather_project/wind/raw/'
+
+    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+
     # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas_baseline'
-    generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len=3) 
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas'
+    generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='rnn') 
+
+    # crnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas'
+    generate_wind_datasets(i_filenames, o_filename_prefix, params, historical=True, deltas=True, usage='crnn') 
+
+                   
+
 
     
 
