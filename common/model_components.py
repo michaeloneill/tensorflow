@@ -19,6 +19,9 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
             cell = tf.nn.rnn_cell.BasicLSTMCell(params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
         elif params['cell_type'] == 'BNLSTM':
             cell = BNLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0) # state_is_tuple assumed True
+        elif params['cell_type'] == 'ConvLSTM':
+            cell = ConvLSTMCell(params['shape'], params['filter_size'], params['num_output_feature_maps'],
+                                forget_bias=1.0) # state_is_tuple assumed True
         elif params['cell_type'] == 'BNConvLSTMCell':
             cell = BNConvLSTMCell(params['shape'], params['filter_size'], params['num_output_feature_maps'],
                                   is_training, forget_bias=1.0) # state_is_tuple assumed True

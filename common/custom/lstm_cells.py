@@ -86,11 +86,57 @@ class ConvRNNCell(object):
         return zeros
 
 
+
+class ConvLSTMCell(ConvRNNCell):
+
+    """Basic Conv LSTM recurrent network cell based on tensorflow BasicLSTM cell
+    adapted from https://github.com/loliverhennigh/Convolutional-LSTM-in-Tensorflow/blob/master/BasicConvLSTMCell.py
+    """
+
+    def __init__(self, shape, filter_size, num_output_feature_maps, forget_bias=1.0):
+        """Initialize the basic Conv LSTM cell.
+        Args:
+        shape: int tuple that is height and width of cell
+        filter_size: int tuple thats the height and width of the filter
+        num_output_feature_maps: int thats the depth of the cell 
+        forget_bias: float, The bias added to forget gates (see above).
+        """
+        self.shape = shape # (H, W)
+        self.filter_size = filter_size
+        self.num_output_feature_maps = num_output_feature_maps
+        self._forget_bias = forget_bias
+
+    @property
+    def state_size(self):
+        return tf.nn.rnn_cell.LSTMStateTuple((self.shape[0], self.shape[1], self.num_output_feature_maps),
+                                             (self.shape[0], self.shape[1], self.num_output_feature_maps))
+    @property
+    def output_size(self):
+        return (self.shape[0], self.shape[1], self.num_output_feature_maps)
+
+    def __call__(self, x, state, scope=None):
+
+        """Long short-term memory cell (LSTM)."""
+        with tf.variable_scope(scope or type(self).__name__):
+            
+            c, h = state
+
+            concat = _conv_linear([x, h], self.filter_size, self.num_output_feature_maps * 4, bias=True)
+            i, j, f, o = tf.split(3, 4, concat) # split along output_feature_maps
+                
+            new_c = c * tf.nn.sigmoid(f + self._forget_bias) + tf.nn.sigmoid(i) * tf.tanh(j)
+            new_h = tf.tanh(new_c) * tf.sigmoid(o)
+                
+            new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
+
+            return new_h, new_state
+
+
 class BNConvLSTMCell(ConvRNNCell):
 
     """Basic Conv LSTM recurrent network cell based on tensorflow BasicLSTM cell
-    with batch normalisation as described in arxiv.org/abs/1603.09025
     adapted from https://github.com/loliverhennigh/Convolutional-LSTM-in-Tensorflow/blob/master/BasicConvLSTMCell.py
+    with batch normalisation as described in arxiv.org/abs/1603.09025
     """
 
     def __init__(self, shape, filter_size, num_output_feature_maps, is_training, forget_bias=1.0):
@@ -122,26 +168,25 @@ class BNConvLSTMCell(ConvRNNCell):
             
             c, h = state
 
-            concat = _conv_linear([x, h], self.filter_size, self.num_output_feature_maps * 4)
+            concat = _conv_linear([x, h], self.filter_size, self.num_output_feature_maps * 4, bias=False)
             i, j, f, o = tf.split(3, 4, concat) # split along output_feature_maps
 
-            # # add batch_norm to each gate
+            # add batch_norm to each gate
 
-            # i = batch_norm(i, 'i/', self._is_training, conv = True)
-            # j = batch_norm(j, 'j/', self._is_training, conv = True)
-            # f = batch_norm(f, 'f/', self._is_training, conv = True)
-            # o = batch_norm(o, 'o/', self._is_training, conv = True)
+            i = batch_norm(i, 'i/', self._is_training, conv = True)
+            j = batch_norm(j, 'j/', self._is_training, conv = True)
+            f = batch_norm(f, 'f/', self._is_training, conv = True)
+            o = batch_norm(o, 'o/', self._is_training, conv = True)
                 
             new_c = c * tf.nn.sigmoid(f + self._forget_bias) + tf.nn.sigmoid(i) * tf.tanh(j)
-            # new_h = tf.tanh(batch_norm(new_c, 'new_h/', self._is_training, conv=True)) * tf.sigmoid(o)
-            new_h = tf.tanh(new_c)* tf.sigmoid(o)
+            new_h = tf.tanh(batch_norm(new_c, 'new_h/', self._is_training, conv=True)) * tf.sigmoid(o)
                 
             new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
 
             return new_h, new_state
 
 
-def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
+def _conv_linear(args, filter_size, num_output_feature_maps, bias, bias_start=0.0, scope=None):
 
     """convolution:
     Args:
@@ -177,10 +222,19 @@ def _conv_linear(args, filter_size, num_output_feature_maps, scope=None):
             dtype=dtype
         )
         if len(args) == 1:
-            return tf.nn.conv2d(args[0], filtr, strides=[1, 1, 1, 1], padding='SAME')
+            res = tf.nn.conv2d(args[0], filtr, strides=[1, 1, 1, 1], padding='SAME')
         else:
             # no need to apply conv2d to x and h seperately and sum because they have SAME dimensions and conv2d sums along 3rd axis
-            return tf.nn.conv2d(tf.concat(3, args), filtr, strides=[1, 1, 1, 1], padding='SAME')
+            res = tf.nn.conv2d(tf.concat(3, args), filtr, strides=[1, 1, 1, 1], padding='SAME')
+        if not bias:
+            return res
+        bias_term = tf.get_variable(
+            "bias", [num_output_feature_maps],
+            initializer=tf.constant_initializer(
+                bias_start, dtype=dtype)
+            dtype = dtype
+        )
+        return res + bias_term
                                                                       
 
 def batch_norm(x, name_scope, is_training, epsilon=1e-3, decay=0.999, conv=False):
