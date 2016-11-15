@@ -90,12 +90,10 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
             _, loss_train, summary = run_train(train_set, params, model, sess, miniBatchIndex, merged)
             train_writer.add_summary(summary, iteration)
-
-            agg_loss_train += loss_train
             
             if (iteration+1)%params['monitor_frequency'] == 0:
-                print 'train loss per minibatch for epoch {0}, minibatch {1}/{2} is: {3:.2f}'.format(
-                    epoch+1, miniBatchIndex+1, nBatchTrain, agg_loss_train/(iteration+1))
+                print 'train loss for minibatch {0}/{1} epoch {2} is: {3:.2f}'.format(
+                    miniBatchIndex+1, nBatchTrain, epoch+1, loss_train)
                 loss_val, summary = run_val(val_set, params, model, sess, merged) 
                 val_writer.add_summary(summary, iteration) 
                 print 'correpsonding val loss is: {:.2f}'.format(loss_val)
