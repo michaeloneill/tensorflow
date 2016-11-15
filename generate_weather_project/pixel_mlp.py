@@ -227,7 +227,7 @@ def generate_images(X_test_time, params, model, sess,
 
     # compute squared error loss
 
-    sq_loss = np.mean(np.sum(np.square(X_test_time[:, :, :, params['channels_to_predict']] - ground_truth), axis=[1, 2, 3]))
+    sq_loss = np.mean(np.sum(np.square(X_test_time[:, :, :, params['channels_to_predict']] - ground_truth), axis=(1, 2, 3)))
     print 'per sample sq_loss between ground truth and predictions is {}'.format(sq_loss)
 
 
