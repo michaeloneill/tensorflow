@@ -17,7 +17,7 @@ def main():
         os.makedirs(results_dir)
     
     params_rnn = {
-        'cell_type': 'BNConvLSTMCell',
+        'cell_type': 'ConvLSTM',
         'shape': (10, 10),
         'filter_size': (3,3),
         'num_output_feature_maps': 3,
@@ -29,7 +29,7 @@ def main():
     
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 100,
+        'epochs': 10,
         'learning_rate': 0.1,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,

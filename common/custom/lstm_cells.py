@@ -231,7 +231,7 @@ def _conv_linear(args, filter_size, num_output_feature_maps, bias, bias_start=0.
         bias_term = tf.get_variable(
             "bias", [num_output_feature_maps],
             initializer=tf.constant_initializer(
-                bias_start, dtype=dtype)
+                bias_start, dtype=dtype),
             dtype = dtype
         )
         return res + bias_term

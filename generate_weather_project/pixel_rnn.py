@@ -102,7 +102,7 @@ def main():
     
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 100,
+        'epochs': 10,
         'learning_rate': 0.1,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
