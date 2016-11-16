@@ -29,7 +29,7 @@ def main():
     
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 10,
+        'epochs': 1,
         'learning_rate': 0.1,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
@@ -48,7 +48,7 @@ def main():
 
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl/train_time.npz'    
     training_data = np.load(training_data_filename)
     
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -73,7 +73,7 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
