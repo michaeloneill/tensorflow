@@ -508,46 +508,46 @@ if __name__=='__main__':
     # # ######################## wind historical many months ##############################################
 
 
-    # params = {
-    #     'n_patches_train': 400000,
-    #     'n_patches_val': 50000,
-    #     'n_patches_test': 50000,
-    #     'patch_dim': 10,
-    #     'n_bins': 256,
-    #     'p_i': 9,
-    #     'p_j': 5,
-    #     'keep_components': [0, 1],
-    #     'channels_to_predict': [4,5],
-    #     'seq_len': 3 
-    # }
+    params = {
+        'n_patches_train': 400000,
+        'n_patches_val': 50000,
+        'n_patches_test': 50000,
+        'patch_dim': 10,
+        'n_bins': 256,
+        'p_i': 9,
+        'p_j': 5,
+        'keep_components': [0, 1, 4],
+        'channels_to_predict': [6, 7, 8],
+        'seq_len': 3 
+    }
 
-    # path = '../../data/generate_weather_project/wind/raw/'
+    path = '../../data/generate_weather_project/wind/raw/'
 
-    # i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
 
-    # # rnn
-    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl'
-    # generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
+    # rnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp'
+    generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
 
-    # # crnn
-    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl'
-    # generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='crnn')
+    # crnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlylp'
+    generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='crnn')
 
 
     
     # ############################## wind historical one month baseline ################################
 
-    params = {
-        'keep_components': [0,1],
-        'seq_len': 3
-    }
+    # params = {
+    #     'keep_components': [0,1],
+    #     'seq_len': 3
+    # }
     
-    path = '../../data/generate_weather_project/wind/raw/'
-    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+    # path = '../../data/generate_weather_project/wind/raw/'
+    # i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
     
-    # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_baseline'
-    generate_wind_baseline_dataset(i_filenames, o_filename_prefix, params) 
+    # # rnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp_baseline'
+    # generate_wind_baseline_dataset(i_filenames, o_filename_prefix, params) 
 
 
 

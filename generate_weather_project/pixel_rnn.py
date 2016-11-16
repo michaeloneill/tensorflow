@@ -113,7 +113,7 @@ def main():
     params = {
         'rnn': params_rnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 3, 200], 'y_': [None, 512]},
+        'inpt_shape': {'x': [None, 3, 300], 'y_': [None, 768]},
         'channels_to_predict': [4,5],
         'device': '/gpu:1',
         'results_dir': results_dir

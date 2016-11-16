@@ -8,18 +8,19 @@ from pixel_rnn import hidden_to_output
 from PIL import Image
 from common.plotting import tile_raster_images
 import os
+from scipy import ndimage
 
-def get_preds(X_test_time, y_test_time, params, model, sess, tile_shape, img_shape):
+def get_preds(X_test_time, ground_truth, params, model, sess, tile_shape, img_shape, zoom=None):
 
     ''' X_test_time is [N x seq_len x H*W*num_channels]
-    y_test_time is [N x H*W*num_channels]
+    ground_truth is [N x H*W*num_channels]
     '''
     H, W, n_channels = img_shape
-    y_test_time = y_test_time.reshape(-1, H, W, n_channels)
+    ground_truth = ground_truth.reshape(-1, H, W, n_channels)
 
     for i in range(n_channels):    
         ground_truth_images = Image.fromarray(tile_raster_images(
-            X=y_test_time[:, :, :, i].reshape(-1, H*W),
+            X=ground_truth[:, :, :, i].reshape(-1, H*W),
             img_shape=(H, W),
             tile_shape=tile_shape,
             tile_spacing=(1,1),
@@ -33,7 +34,12 @@ def get_preds(X_test_time, y_test_time, params, model, sess, tile_shape, img_sha
                                    model['is_training']: 0.0
                       }
     )
-    
+
+
+    if zoom is not None:
+        output = output.reshape(-1, int(H*zoom), int(W*zoom), n_channels)
+        output = ndimage.zoom(output, (1, 1/zoom, 1/zoom, 1))
+        
     output = output.reshape(-1, H, W, n_channels)
     for i in range(n_channels):
         generated_images = Image.fromarray(tile_raster_images(
@@ -89,6 +95,19 @@ def build_baseline_rnn_model(params):
     return model
 
 
+def zoom_x(x, shape, zoom):
+
+    x = x.reshape(shape)
+    x = ndimage.zoom(x, (1, 1, zoom, zoom, 1))
+    n, s, h, w, c = x.shape
+    return x.reshape(n, s, h*w*c)
+
+def zoom_y(y, shape, zoom):
+    y = y.reshape(shape)
+    y = ndimage.zoom(y, (1, zoom, zoom, 1))
+    n, h, w, c = y.shape
+    return y.reshape(n, h*w*c)
+
 
 def main():
 
@@ -118,7 +137,7 @@ def main():
     params = {
         'rnn': params_rnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 2, 181*360*2], 'y_': [None, 181*360*2]},
+        'inpt_shape': {'x': [None, 2, 18*36*2], 'y_': [None, 18*36*2]},
         'device': '/gpu:1',
         'results_dir': results_dir
     }
@@ -130,7 +149,16 @@ def main():
     train_set = [training_data['X_train'], training_data['y_train']]
     val_set = [training_data['X_val'], training_data['y_val']]
     test_set = [training_data['X_test'], training_data['y_test']]
-                                
+
+    ground_truth = np.copy(test_set[1])
+
+    # zoom
+    zoom=0.1
+    train_set[0], val_set[0], test_set[0] = [zoom_x(x, (-1, 2, 181, 360, 2), zoom)
+                                                  for x in [train_set[0], val_set[0], test_set[0]]]
+    train_set[1], val_set[1], test_set[1] = [zoom_y(y, (-1, 181, 360, 2), zoom)
+                                                  for y in [train_set[1], val_set[1], test_set[1]]]
+                                    
     model = build_baseline_rnn_model(params)
 
     sess = tf.Session()
@@ -141,8 +169,9 @@ def main():
     # for plotting results
     tile_shape = (4,4)
     img_shape = (181, 360, 2)
+    
 
-    get_preds(test_set[0], test_set[1], params, model, sess, tile_shape, img_shape)
+    get_preds(test_set[0], ground_truth, params, model, sess, tile_shape, img_shape, zoom)
 
                                 
 
