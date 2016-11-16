@@ -340,32 +340,33 @@ def generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix,
 
 
 
-def generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len):
+def generate_wind_baseline_dataset(i_filenames, o_filename_prefix, params):
 
     data = []
     for f in i_filenames:
         d = h5py.File(f, 'r')['Dataset1']
-        d = np.transpose(d, [0, 2, 3, 1]) 
+        d = np.transpose(d, [0, 2, 3, 1])
+        d = d[:, :, :, params['keep_components']]
         n, H, W, n_components = d.shape
-        assert n % 4 == 0 # data should be recorded at 6 hourly intervals
+        if n % 4 != 0: # data should be recorded at 6 hourly intervals
+            continue
         d = np.array([np.concatenate(x, 2) for x in np.split(d, n/4)]) # [n/4, H, W, 4*n_components]
         data.append(d)
 
     data = np.concatenate(data)
-    N, H, W, n_channels = data.shape
-    
+    N, H, W, depth = data.shape
 
-    for i in range(2, n_channels):
-        if i%2 == 0:
-            data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 0]
-        else:
-            data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, 1]
+    for i in range(n_components, depth):
+        sub_ind = i/n_components
+        data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, sub_ind]
+
     data = unit_scale(data[:, :, :, n_components:]) # rescale and ignore fist time step channels
-    n_channels = data.shape[-1]
+    new_depth = data.shape[-1]
 
-    # plot first data example as grid with rows snapshots and cols x/y components
-    n_rows = n_channels/n_components
-    n_cols = n_components
+    # plot first data example as grid with rows snapshots and cols components
+    n_rows = params['seq_len']
+    n_cols = new_depth/params['seq_len']
+
     wind_images = Image.fromarray(tile_raster_images(
         X=data[0].transpose(2, 0, 1).reshape(-1, H*W),
         img_shape=(H, W),
@@ -374,10 +375,9 @@ def generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len):
         scale_to_unit_interval=False))
     wind_images.save(o_filename_prefix + '/images/sample_0_historical.png')
 
-
-    data = data.reshape(-1, H, W, seq_len, n_channels/seq_len)
+    data = data.reshape(-1, H, W, params['seq_len'], new_depth/params['seq_len'])
     data = np.transpose(data, [0, 3, 1, 2, 4])
-    data = data.reshape(-1, seq_len, H*W*n_channels/seq_len)
+    data = data.reshape(-1, params['seq_len'], H*W*new_depth/params['seq_len'])
 
     # split into train, test val
 
@@ -505,40 +505,50 @@ if __name__=='__main__':
     # generate_wind_baseline_dataset(i_filenames, o_filename_prefix, seq_len=3) 
 
 
-    # ######################## wind historical many months ##############################################
+    # # ######################## wind historical many months ##############################################
 
 
-    params = {
-        'n_patches_train': 400000,
-        'n_patches_val': 50000,
-        'n_patches_test': 50000,
-        'patch_dim': 10,
-        'n_bins': 256,
-        'p_i': 9,
-        'p_j': 5,
-        'keep_components': [0, 1],
-        'channels_to_predict': [4,5],
-        'seq_len': 3 
-    }
+    # params = {
+    #     'n_patches_train': 400000,
+    #     'n_patches_val': 50000,
+    #     'n_patches_test': 50000,
+    #     'patch_dim': 10,
+    #     'n_bins': 256,
+    #     'p_i': 9,
+    #     'p_j': 5,
+    #     'keep_components': [0, 1],
+    #     'channels_to_predict': [4,5],
+    #     'seq_len': 3 
+    # }
 
-    path = '../../data/generate_weather_project/wind/raw/'
+    # path = '../../data/generate_weather_project/wind/raw/'
 
-    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+    # i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
 
-    # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl'
-    generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
+    # # rnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl'
+    # generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
 
-    # crnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl'
-    generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='crnn')
-
-
-
-                   
+    # # crnn
+    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl'
+    # generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='crnn')
 
 
     
+    # ############################## wind historical one month baseline ################################
+
+    params = {
+        'keep_components': [0,1],
+        'seq_len': 3
+    }
+    
+    path = '../../data/generate_weather_project/wind/raw/'
+    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+    
+    # rnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_baseline'
+    generate_wind_baseline_dataset(i_filenames, o_filename_prefix, params) 
+
 
 
 

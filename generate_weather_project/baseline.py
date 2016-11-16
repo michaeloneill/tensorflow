@@ -107,8 +107,8 @@ def main():
     
     params_train = {
         'miniBatchSize': 20,
-        'epochs': 1000,
-        'learning_rate': 0.01,
+        'epochs': 10,
+        'learning_rate': 0.1,
         'dropout_keep_prob': 0.5,
         'monitor_frequency': 10,
         'momentum': 0.9,
@@ -124,9 +124,9 @@ def main():
     }
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas_baseline/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_baseline/train_time.npz'    
     training_data = np.load(training_data_filename)
-    
+
     train_set = [training_data['X_train'], training_data['y_train']]
     val_set = [training_data['X_val'], training_data['y_val']]
     test_set = [training_data['X_test'], training_data['y_test']]
@@ -139,7 +139,7 @@ def main():
     train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
 
     # for plotting results
-    tile_shape = (2, 2)
+    tile_shape = (4,4)
     img_shape = (181, 360, 2)
 
     get_preds(test_set[0], test_set[1], params, model, sess, tile_shape, img_shape)
