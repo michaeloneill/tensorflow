@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import pdb
 import sys
+import os
 
 LOSS_FNS = {
     'mean_squared': tf.square,
@@ -73,7 +74,7 @@ def run_test(test_set, params, model, sess):
 
 
 def train(train_set, val_set, test_set, params, model, sess, results_dir):
-
+    
     saver = tf.train.Saver()
     merged = tf.merge_all_summaries()
     train_writer = tf.train.SummaryWriter(results_dir+'logs/train', sess.graph)
@@ -105,9 +106,9 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
                 if loss_val < best_val_loss:
                     best_val_loss = loss_val
-                    best_model_file = saver.save(sess, results_dir+'models/model', global_step=iteration)
+                    best_model_file = saver.save(sess, results_dir+'best_model.ckpt')
 
-    saver.restore(sess, best_model_file)
+    saver.restore(sess, best_model_file) # now graph in session has optimal variables
     loss_test = run_test(val_set, params, model, sess) 
     print 'Training complete. Test set loss at lowest validation loss is: {:.2f}'.format(loss_test)
 

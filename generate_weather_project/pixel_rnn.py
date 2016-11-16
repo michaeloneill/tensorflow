@@ -121,7 +121,7 @@ def main():
 
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl/train_time.npz'    
     training_data = np.load(training_data_filename)
     
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -134,7 +134,7 @@ def main():
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
-    train(train_set, val_set, test_set, params['train'], model, sess, results_dir)
+    train(train_set, val_set, test_set, params['train'], model, sess, results_dir) # graph restored with optimal variables
 
     # investigate softmax vs ground truth for selected examples that were trained on
     n = 3
@@ -146,14 +146,14 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_rnn_deltas/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
     
     p_i, p_j = 9, 5 # coordintates of pixel to predict in patch
     p_dim = 10
-    tile_shape = (2, 2) # for plotting results
+    tile_shape = (4, 4) # for plotting results
 
     generate_images(X_test_time, params, model,
                     sess, p_i, p_j, p_dim,

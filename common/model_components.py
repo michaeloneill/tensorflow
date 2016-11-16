@@ -2,6 +2,7 @@ import tensorflow as tf
 from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
 from custom.lstm_cells import BNLSTMCell, ConvLSTMCell, BNConvLSTMCell
 import pdb
+import numpy as np
 
 ACTIVATIONS = {
     'sigmoid': tf.sigmoid,

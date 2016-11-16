@@ -267,7 +267,7 @@ def main():
     # Load the training dataset
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_mlp/train_time.npz'    
     training_data = np.load(training_data_filename)
 
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -291,7 +291,7 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/256_bin/wind_201401_dataset_pixel_mlp_historical/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_201401_dataset_pixel_mlp/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
