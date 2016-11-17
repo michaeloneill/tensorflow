@@ -20,6 +20,26 @@ def images_to_tuple(images):
 
 
 
+def concatenate_vert(images, deltaW, offsetW, offsetH):
+
+        """ concatenates 2 PIL Image objects vertically """
+
+        # images = map(Image.open, images) # for filename inputs
+        
+        W = max(img.size[0] for img in images)
+        H = sum(img.size[1] for img in images)
+
+        result = Image.new("RGBA", (W, H))
+        
+        result.paste(images[0], (0, 0))
+        result.paste(images[1], (0, images[0].size[1]))
+        
+        return result
+
+                                                                                                                                    
+
+
+
 def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                        scale_to_unit_interval=False,
                        output_pixel_vals=True):

@@ -191,7 +191,7 @@ def generate_images(X_test_time, params, model, sess,
     for i in range(H):
         for j in range(W):
             patches = get_wrapped_test_time_patches(X_test_time, i, j, p_i, p_j, H, W, p_dim)
-            patches = mask_input(patches, p_i, p_j, params['channels_to_predict'])
+            # patches = mask_input(patches, p_i, p_j, params['channels_to_predict']) deprecated
             if usage is 'mlp': 
                 patches = patches.reshape(-1, p_dim*p_dim*depth)
             elif usage is 'rnn' or 'crnn':
