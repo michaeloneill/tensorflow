@@ -51,6 +51,12 @@ def get_preds(X_test_time, ground_truth, params, model, sess, tile_shape, img_sh
             scale_to_unit_interval=False))
         generated_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
 
+    # compute squared error loss
+
+    sq_loss = np.mean(np.sum(np.square(output - ground_truth[:, :180, :, :]), axis=(1, 2, 3))) # fudge
+    print 'per sample sq_loss between ground truth and predictions is {}'.format(sq_loss)
+
+
 
 def get_loss(logits, targets):
 

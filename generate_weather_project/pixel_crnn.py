@@ -48,7 +48,7 @@ def main():
 
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlylp/train_time.npz'    
     training_data = np.load(training_data_filename)
     
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -73,7 +73,7 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlylp/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
