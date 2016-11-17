@@ -113,15 +113,15 @@ def main():
     params = {
         'rnn': params_rnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 3, 300], 'y_': [None, 768]},
-        'channels_to_predict': [6, 7, 8],
+        'inpt_shape': {'x': [None, 3, 200], 'y_': [None, 512]},
+        'channels_to_predict': [4,5],
         'device': '/gpu:1',
         'results_dir': results_dir
     }
 
 
 
-    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp/train_time.npz'    
+    training_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl/train_time.npz'    
     training_data = np.load(training_data_filename)
     
     train_set = [training_data['X_train'], training_data['y_train']]
@@ -146,7 +146,7 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']

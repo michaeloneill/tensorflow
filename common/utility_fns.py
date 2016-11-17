@@ -106,7 +106,7 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
                 if loss_val < best_val_loss:
                     best_val_loss = loss_val
-                    best_model_file = saver.save(sess, results_dir+'best_model.ckpt')
+                    best_model_file = saver.save(sess, results_dir+'best_model-{:.4g}.ckpt'.format(iteration))
 
     saver.restore(sess, best_model_file) # now graph in session has optimal variables
     loss_test = run_test(val_set, params, model, sess) 
