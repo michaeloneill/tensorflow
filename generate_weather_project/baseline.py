@@ -39,6 +39,7 @@ def get_preds(X_test_time, ground_truth, params, model, sess, tile_shape, img_sh
     if zoom is not None:
         output = output.reshape(-1, int(H*zoom), int(W*zoom), n_channels)
         output = ndimage.zoom(output, (1, 1/zoom, 1/zoom, 1))
+        H, W = output.shape[1:3] # in case it has changed slightly due to numerical rounding
         
     output = output.reshape(-1, H, W, n_channels)
     for i in range(n_channels):
