@@ -37,8 +37,8 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, resu
 
     for i, chan_axes in enumerate(axes):
         for j, ax in enumerate(chan_axes):
-            ax.bar(index, channel_softmaxes[j][i], bar_width, color='b', edgecolor='none')
-            ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r', edgecolor='none')
+            ax.bar(index, channel_softmaxes[j][i], bar_width, color='b', edgecolor='b')
+            ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r', edgecolor='r')
 
             ax.set_xticks([bar_width, (n_bins-1)+bar_width])
             ax.set_xticklabels([0, n_bins-1])
