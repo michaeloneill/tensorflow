@@ -84,6 +84,9 @@ def forecast(X, model, params, usage='rnn'):
 
 
 
+
+
+
     
 
 

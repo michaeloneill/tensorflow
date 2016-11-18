@@ -75,7 +75,7 @@ def run_test(test_set, params, model, sess):
 
 def train(train_set, val_set, test_set, params, model, sess, results_dir):
     
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=1)
     merged = tf.merge_all_summaries()
     train_writer = tf.train.SummaryWriter(results_dir+'logs/train', sess.graph)
     val_writer = tf.train.SummaryWriter(results_dir+'logs/val', sess.graph)
@@ -108,7 +108,7 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
                 if loss_val < best_val_loss:
                     best_val_loss = loss_val
                     best_iter = iteration
-                    best_model_file = saver.save(sess, results_dir+'best_model', global_step=best_iter, max_to_keep=1)
+                    best_model_file = saver.save(sess, results_dir+'best_model', global_step=best_iter)
 
 
     saver.restore(sess, best_model_file) # now graph in session has optimal variables
