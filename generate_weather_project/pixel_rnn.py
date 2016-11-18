@@ -42,15 +42,19 @@ def build_pixel_rnn_model(params):
 
     with tf.name_scope('input'):
         x = tf.placeholder(tf.float32, shape=params['inpt_shape']['x'], name='x')
+        tf.add_to_collection('x', x)
         y_ = tf.placeholder(tf.float32, shape=params['inpt_shape']['y_'], name='y_')
+        tf.add_to_collection('y_', y_)
 
     with tf.name_scope('dropout_keep_prob'):
         dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        tf.add_to_collection('dropout_keep_prob', dropout_keep_prob)
 
     with tf.name_scope('is_training'):
         is_training = tf.placeholder(tf.float32,
                                      shape=(),
                                      name='is_training')
+        tf.add_to_collection('is_training', is_training)
     
     with tf.name_scope('lstm'):
         hiddens, _ = build_rnn(x, dropout_keep_prob, is_training, params['rnn'])
