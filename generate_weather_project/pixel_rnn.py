@@ -60,6 +60,7 @@ def build_pixel_rnn_model(params):
 
     with tf.name_scope('predictions'):
         preds = get_preds(outputs, len(params['channels_to_predict']))
+        tf.add_to_collection('preds', preds)
         
     # for monitoring
     with tf.name_scope('channel_softmaxes'):

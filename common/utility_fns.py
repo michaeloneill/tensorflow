@@ -86,6 +86,7 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
     best_val_loss = np.inf
     best_model_file = None
+    best_iter = None
     
     print 'starting training...'
     for epoch in range(params['epochs']):
@@ -106,10 +107,10 @@ def train(train_set, val_set, test_set, params, model, sess, results_dir):
 
                 if loss_val < best_val_loss:
                     best_val_loss = loss_val
-                    best_model_file_tmp = saver.save(sess, results_dir+'best_model')
+                    best_iter = iteration
+                    best_model_file = saver.save(sess, results_dir+'best_model', global_step=best_iter, max_to_keep=1)
 
-    best_model_file = best_model_file_tmp + '-{:e}.ckpt'.format(iteration)
-    os.rename(best_model_file_tmp, best_model_file)
+
     saver.restore(sess, best_model_file) # now graph in session has optimal variables
     loss_test = run_test(val_set, params, model, sess) 
     print 'Training complete. Test set loss at lowest validation loss is: {:.2f}'.format(loss_test)

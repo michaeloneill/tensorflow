@@ -133,9 +133,10 @@ def build_train_graph(loss, params):
         grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), params['grad_clip'])
 
         optimizer = tf.train.MomentumOptimizer(params['learning_rate'], momentum=params['momentum'])
-        train_step = optimizer.apply_gradients(zip(grads, tvars))
+        train_op = optimizer.apply_gradients(zip(grads, tvars))
+        tf.add_to_collection('train_op', train_op)
 
-        return train_step
+        return train_op
 
 
 def get_loss(logits, targets, loss_fn='mean_squared'):
