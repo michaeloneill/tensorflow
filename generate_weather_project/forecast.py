@@ -1,9 +1,10 @@
 import tensorflow as tf
 import numpy as np
 
+from common.utility_fns import get_wrapped_test_time_patches
 import os
 import pdb
-from common.plotting import tile_raster_images, images_to_tuple
+from common.plotting import tile_raster_images, concatenate_vert
 from PIL import Image
 
 
@@ -26,7 +27,7 @@ def forecast(X_test_time, model, sess, params, usage='rnn'):
     prediction_channels = np.arange(n_components*(seq_len-1), n_components*seq_len)
     n_forecasts = n_time_steps - seq_len + 1
     
-    ground_truth = X_test_time.reshape(N, H, W, n_time_steps, n_components)
+    ground_truth = np.copy(X_test_time.reshape(N, H, W, n_time_steps, n_components))
     
     for k in xrange(n_forecasts):
 
@@ -49,7 +50,7 @@ def forecast(X_test_time, model, sess, params, usage='rnn'):
                                      model['is_training']:0.0
                         }
                 )
-            print 'generated row {} forecast {}/{}'.format(i, k, n_forecasts)
+            print 'generated row {} forecast {}/{}'.format(i, k+1, n_forecasts)
 
     X_test_time = X_test_time.reshape(N, H, W, n_time_steps, n_components)
 
@@ -73,7 +74,7 @@ def forecast(X_test_time, model, sess, params, usage='rnn'):
                 scale_to_unit_interval=False))
 
             concat = concatenate_vert([im_forecast, im_ground])
-            generated_images.save(params['results_dir'] + 'forecasts/sample_{}_step_{}.png'.format(i, j))
+            concat.save(params['results_dir'] + 'sample_{}_step_{}.png'.format(i, j))
 
 
 
@@ -89,7 +90,8 @@ def main():
         'seq_len': 3,
         'p_i': 9,
         'p_j': 5,
-        'p_dim': 10
+        'p_dim': 10,
+        'results_dir': results_dir
     }
     
     sess = tf.Session()
@@ -112,10 +114,12 @@ def main():
     X_test_time = testing_data['X_test_time']
 
 
-    forecast(X_test_time, model, sess, params, usage='rnn'):        
+    forecast(X_test_time, model, sess, params, usage='rnn')
         
 
 
+if __name__=='__main__':
+    main()
 
 
 

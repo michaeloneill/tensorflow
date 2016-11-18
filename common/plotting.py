@@ -1,5 +1,6 @@
 import numpy as np
 from utility_fns import unit_scale
+from PIL import Image
 
 
 def images_to_tuple(images):
@@ -20,7 +21,7 @@ def images_to_tuple(images):
 
 
 
-def concatenate_vert(images, deltaW, offsetW, offsetH):
+def concatenate_vert(images):
 
         """ concatenates 2 PIL Image objects vertically """
 
