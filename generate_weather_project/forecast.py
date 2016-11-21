@@ -42,6 +42,10 @@ def forecast(X_test_time, model, sess, params, usage='rnn'):
                 patches = np.transpose(patches, [0, 3, 1, 2, 4])
                 if usage is 'rnn':
                     patches = patches.reshape(-1, seq_len, p_dim*p_dim*n_components)
+                elif usage is 'crnn':
+                    pass
+                else:
+                    raise ValueError('usage not recognised')
 
                 # reuse storage      
                 X_test_time[:, i, j, depth_start + prediction_channels] = sess.run(model['preds'],
@@ -86,7 +90,7 @@ def main():
         os.makedirs(results_dir)
 
     params = {
-        'n_components': 3,
+        'n_components': 2,
         'seq_len': 3,
         'p_i': 9,
         'p_j': 5,
@@ -108,13 +112,13 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp_forecasting/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
 
 
-    forecast(X_test_time, model, sess, params, usage='rnn')
+    forecast(X_test_time, model, sess, params, usage='crnn')
         
 
 

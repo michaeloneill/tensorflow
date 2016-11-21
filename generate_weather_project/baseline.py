@@ -52,8 +52,8 @@ def get_preds(X_test_time, ground_truth, params, model, sess, tile_shape, img_sh
         generated_images.save(params['results_dir'] + 'generated_images_channel_{}.png'.format(i))
 
     # compute squared error loss
-    # sq_loss = np.mean(np.sum(np.square(output - ground_truth), axis=(1, 2, 3))) 
-    sq_loss = np.mean(np.sum(np.square(output - ground_truth[:, :180, :, :]), axis=(1, 2, 3))) # fudge for zoom
+    sq_loss = np.mean(np.sum(np.square(output - ground_truth), axis=(1, 2, 3))) 
+    # sq_loss = np.mean(np.sum(np.square(output - ground_truth[:, :180, :, :]), axis=(1, 2, 3))) # fudge for zoom
 
     print 'per sample sq_loss between ground truth and predictions is {}'.format(sq_loss)
 
@@ -145,7 +145,7 @@ def main():
     params = {
         'rnn': params_rnn,
         'train': params_train,
-        'inpt_shape': {'x': [None, 2, 18*36*2], 'y_': [None, 18*36*2]},
+        'inpt_shape': {'x': [None, 2, 181*360*2], 'y_': [None, 181*360*2]},
         'device': '/gpu:1',
         'results_dir': results_dir
     }
@@ -160,12 +160,12 @@ def main():
 
     ground_truth = np.copy(test_set[1])
 
-    # zoom
-    zoom=0.1
-    train_set[0], val_set[0], test_set[0] = [zoom_x(x, (-1, 2, 181, 360, 2), zoom)
-                                                  for x in [train_set[0], val_set[0], test_set[0]]]
-    train_set[1], val_set[1], test_set[1] = [zoom_y(y, (-1, 181, 360, 2), zoom)
-                                                  for y in [train_set[1], val_set[1], test_set[1]]]
+    # # zoom
+    # zoom=0.1
+    # train_set[0], val_set[0], test_set[0] = [zoom_x(x, (-1, 2, 181, 360, 2), zoom)
+    #                                               for x in [train_set[0], val_set[0], test_set[0]]]
+    # train_set[1], val_set[1], test_set[1] = [zoom_y(y, (-1, 181, 360, 2), zoom)
+    #                                               for y in [train_set[1], val_set[1], test_set[1]]]
                                     
     model = build_baseline_rnn_model(params)
 
@@ -179,7 +179,7 @@ def main():
     img_shape = (181, 360, 2)
     
 
-    get_preds(test_set[0], ground_truth, params, model, sess, tile_shape, img_shape, zoom)
+    get_preds(test_set[0], ground_truth, params, model, sess, tile_shape, img_shape, zoom=None)
 
                                 
 

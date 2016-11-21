@@ -589,8 +589,8 @@ if __name__=='__main__':
     i_filename = '../../data/generate_weather_project/wind/raw/2009/wind_200901.h5'
 
     # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlylp_forecasting'
-    generate_forecast_test_dataset(i_filename, o_filename_prefix, n_time_steps=12, keep_components=[0,1,4])
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting'
+    generate_forecast_test_dataset(i_filename, o_filename_prefix, n_time_steps=12, keep_components=[0,1])
 
 
 
