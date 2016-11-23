@@ -91,7 +91,7 @@ def main():
 
     params = {
         'n_components': 2,
-        'seq_len': 3,
+        'seq_len': 7,
         'p_i': 9,
         'p_j': 5,
         'p_dim': 10,
@@ -112,13 +112,13 @@ def main():
 
     # load the testing dataset
 
-    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting/test_time.npz'
+    testing_data_filename = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting_20_steps/test_time.npz'
     
     testing_data = np.load(testing_data_filename)
     X_test_time = testing_data['X_test_time']
 
 
-    forecast(X_test_time, model, sess, params, usage='crnn')
+    forecast(X_test_time, model, sess, params, usage='rnn')
         
 
 

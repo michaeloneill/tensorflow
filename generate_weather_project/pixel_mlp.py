@@ -41,10 +41,12 @@ def plot_channel_softmaxes_vs_ground_truth(inpt, ground_truth, model, sess, resu
             ax.bar(index+bar_width, ground_truth[i, :, j], bar_width, color='r', edgecolor='r')
 
             ax.set_xticks([bar_width, (n_bins-1)+bar_width])
-            ax.set_xticklabels([0, n_bins-1])
+            ax.set_xticklabels([110, 150])
 
             ax.set_yticks([0, 1])
             ax.set_yticklabels([0,1])
+
+            ax.set_xlim([110, 150])
 
             if i==0:
                 ax.set_title('channel {}'.format(j))

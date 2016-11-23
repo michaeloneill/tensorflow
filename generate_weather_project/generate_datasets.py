@@ -247,10 +247,15 @@ def generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix,
         n, H, W, n_components = d.shape
         if n % 4 != 0: # data should be recorded at 6 hourly intervals
             continue
-        d = np.array([np.concatenate(x, 2) for x in np.split(d, n/4)]) # [n/4, H, W, 4*n_components]
         data.append(d)
-
     data = np.concatenate(data)
+    n_chunks = data.shape[0]/params['seq_len'] # rounds down
+    data = data[:n_chunks*params['seq_len']]
+    n = data.shape[0]
+
+    data = np.array([np.concatenate(x, 2) for x in np.split(data, n/params['seq_len'])]) # [n/params['seq_len'], H, W, 4*n_components]
+
+
     N, H, W, depth = data.shape
     
     for i in range(n_components, depth):
@@ -258,11 +263,12 @@ def generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix,
         data[:, :, :, i] = data[:, :, :, i] - data[:, :, :, sub_ind]
 
     data = unit_scale(data[:, :, :, n_components:]) # rescale and ignore fist time step channels
+    new_seq_len = params['seq_len'] - 1
     new_depth = data.shape[-1]
 
     # plot first data example as grid with rows snapshots and cols components
-    n_rows = params['seq_len']
-    n_cols = new_depth/params['seq_len']
+    n_rows = new_seq_len
+    n_cols = new_depth/new_seq_len
 
     wind_images = Image.fromarray(tile_raster_images(
         X=data[0].transpose(2, 0, 1).reshape(-1, H*W),
@@ -307,21 +313,21 @@ def generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix,
     elif usage is 'rnn' or 'crnn':
         
         p_dim = X_train.shape[1]
-        X_train = X_train.reshape(params['n_patches_train'], p_dim, p_dim, params['seq_len'], -1)
+        X_train = X_train.reshape(params['n_patches_train'], p_dim, p_dim, new_seq_len, -1)
         # reshape to b x seq_len x p_dim x p_dim x n_components:
         X_train = np.transpose(X_train, [0, 3, 1, 2, 4])
 
-        X_val = X_val.reshape(params['n_patches_val'], p_dim, p_dim, params['seq_len'], -1)
+        X_val = X_val.reshape(params['n_patches_val'], p_dim, p_dim, new_seq_len, -1)
         X_val = np.transpose(X_val, [0, 3, 1, 2, 4])
         
-        X_test = X_test.reshape(params['n_patches_test'], p_dim, p_dim, params['seq_len'], -1)
+        X_test = X_test.reshape(params['n_patches_test'], p_dim, p_dim, new_seq_len, -1)
         X_test = np.transpose(X_test, [0, 3, 1, 2, 4])
 
         if usage is 'rnn':
             # reshape to b x seq_len x p_dim*p_dim*n_components:
-            X_train = X_train.reshape(params['n_patches_train'], params['seq_len'], -1)
-            X_val = X_val.reshape(params['n_patches_val'], params['seq_len'], -1)
-            X_test = X_test.reshape(params['n_patches_test'], params['seq_len'], -1)
+            X_train = X_train.reshape(params['n_patches_train'], new_seq_len, -1)
+            X_val = X_val.reshape(params['n_patches_val'], new_seq_len, -1)
+            X_test = X_test.reshape(params['n_patches_test'], new_seq_len, -1)
 
     elif usage is 'cnn':
         pass
@@ -557,26 +563,26 @@ if __name__=='__main__':
     # # ######################## wind historical many months ##############################################
 
 
-    # params = {
-    #     'n_patches_train': 400000,
-    #     'n_patches_val': 50000,
-    #     'n_patches_test': 50000,
-    #     'patch_dim': 10,
-    #     'n_bins': 256,
-    #     'p_i': 9,
-    #     'p_j': 5,
-    #     'keep_components': [0, 1],
-    #     'channels_to_predict': [4, 5],
-    #     'seq_len': 3 
-    # }
+    params = {
+        'n_patches_train': 400000,
+        'n_patches_val': 50000,
+        'n_patches_test': 50000,
+        'patch_dim': 10,
+        'n_bins': 256,
+        'p_i': 9,
+        'p_j': 5,
+        'keep_components': [0, 1],
+        'channels_to_predict': [12, 13],
+        'seq_len': 8 
+    }
 
-    # path = '../../data/generate_weather_project/wind/raw/'
+    path = '../../data/generate_weather_project/wind/raw/'
 
-    # i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
+    i_filenames = [os.path.join(dirpath, f) for dirpath, dirnames, files in os.walk(path) for f in files if f.endswith('.h5')]
 
-    # # rnn
-    # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl'
-    # generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
+    # rnn
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_7_deltas'
+    generate_wind_dataset_full_historical_deltas(i_filenames, o_filename_prefix, params, usage='rnn')
 
     # # crnn
     # o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_crnn_deltas/xlyl'
@@ -589,8 +595,8 @@ if __name__=='__main__':
     i_filename = '../../data/generate_weather_project/wind/raw/2009/wind_200901.h5'
 
     # rnn
-    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting'
-    generate_forecast_test_dataset(i_filename, o_filename_prefix, n_time_steps=12, keep_components=[0,1])
+    o_filename_prefix = '../../data/generate_weather_project/wind/historical/wind_dataset_all_months/pixel_rnn_deltas/xlyl_forecasting_20_steps'
+    generate_forecast_test_dataset(i_filename, o_filename_prefix, n_time_steps=20, keep_components=[0,1])
 
 
 
