@@ -1,7 +1,6 @@
 import tensorflow as tf
-from layers import fullyConnectedLayer, convPoolLayer, batch_norm_wrapper
-from custom.lstm_cells import BNLSTMCell, ConvLSTMCell, BNConvLSTMCell
-import pdb
+from layers import fullyConnectedLayer, convPoolLayer
+from lstm_cells import BNLSTMCell, ConvLSTMCell, BNConvLSTMCell
 import numpy as np
 
 ACTIVATIONS = {
@@ -17,23 +16,34 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
 
     with tf.name_scope('cell'):
         if params['cell_type'] == 'BasicLSTM':
-            cell = tf.nn.rnn_cell.BasicLSTMCell(params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
+            cell = tf.nn.rnn_cell.BasicLSTMCell(
+                params['dim_hidden'], forget_bias=1.0, state_is_tuple=True)
         elif params['cell_type'] == 'BNLSTM':
-            cell = BNLSTMCell(params['dim_hidden'], is_training, forget_bias=1.0) # state_is_tuple assumed True
+            cell = BNLSTMCell(
+                params['dim_hidden'], is_training,
+                forget_bias=1.0)  # state_is_tuple assumed True
         elif params['cell_type'] == 'ConvLSTM':
-            cell = ConvLSTMCell(params['shape'], params['filter_size'], params['num_output_feature_maps'],
-                                forget_bias=1.0) # state_is_tuple assumed True
+            cell = ConvLSTMCell(
+                params['shape'], params['filter_size'],
+                params['num_output_feature_maps'],
+                forget_bias=1.0)  # state_is_tuple assumed True
         elif params['cell_type'] == 'BNConvLSTMCell':
-            cell = BNConvLSTMCell(params['shape'], params['filter_size'], params['num_output_feature_maps'],
-                                  is_training, forget_bias=1.0) # state_is_tuple assumed True
+            cell = BNConvLSTMCell(
+                params['shape'], params['filter_size'],
+                params['num_output_feature_maps'],
+                is_training, forget_bias=1.0)  # state_is_tuple assumed True
         else:
             raise ValueError('Cell type not recognised')
         
         if params['dropout']:
             with tf.name_scope('dropped_cell'):
-                cell = tf.nn.rnn_cell.DropoutWrapper(cell, input_keep_prob=dropout_keep_prob)
+                cell = tf.nn.rnn_cell.DropoutWrapper(
+                    cell, input_keep_prob=dropout_keep_prob)
+
         # with tf.name_scope('stacked_lstm'):
-        #     cell = tf.nn.rnn_cell.MultiRNNCell([cell]*params['num_layers'], state_is_tuple=True)
+        #     cell = tf.nn.rnn_cell.MultiRNNCell(
+        # [cell]*params['num_layers'], state_is_tuple=True)
+        
         b_size = tf.shape(x)[0]
         with tf.name_scope('init_state'):
             state = cell.zero_state(b_size, tf.float32)
@@ -43,26 +53,25 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
         for t in range(params['seq_len']):
             if t > 0:
                 tf.get_variable_scope().reuse_variables()
-            hiddens[t], state = cell(x[:, t], state) # hiddens is s * [b x h]
+            hiddens[t], state = cell(x[:, t], state)  # hiddens is s * [b x h]
 
     return hiddens, state
 
 
-def hidden_to_output(hiddens, dim_output, activation = tf.identity):
+def hidden_to_output(hiddens, dim_output, activation=tf.identity):
 
     """
     To be used on hidden state of rnn.
     hiddens can be s * [bxh] or [bxh] (fully connected cell layers)
-    or it can be s*[bxHxWxnum_output_feature_maps] or [bxHxWxnum_output_feature_maps] (convolutional layers) 
-
+    or it can be s*[bxHxWxnum_output_feature_maps] or
+    [bxHxWxnum_output_feature_maps] (convolutional layers)
     Either way
       output (s*b) x dim_output or b*dim_output
-
-    """        
+    """
 
     if type(hiddens) is list:
         hiddens = tf.concat(0, hiddens)
-    if len(hiddens.get_shape().as_list()) == 4: # convolutional cell
+    if len(hiddens.get_shape().as_list()) == 4:  # convolutional cell
         dim_hidden = np.prod(hiddens.get_shape().as_list()[1:])
         hiddens = tf.reshape(hiddens, [-1, dim_hidden])
     else:
@@ -70,12 +79,11 @@ def hidden_to_output(hiddens, dim_output, activation = tf.identity):
         dim_hidden = hiddens.get_shape()[-1].value
 
     stdev = 1.0/np.sqrt(dim_output)
-    W_out = tf.Variable(tf.random_uniform([dim_hidden, dim_output], -stdev, stdev))
+    W_out = tf.Variable(tf.random_uniform(
+        [dim_hidden, dim_output], -stdev, stdev))
 
     return activation(tf.matmul(hiddens, W_out))
                                        
-
-
 
 def build_cnn(x, dropout_keep_prob, is_training, params):
 
@@ -90,11 +98,10 @@ def build_cnn(x, dropout_keep_prob, is_training, params):
         act = ACTIVATIONS[params['activations'][i]]
         pool = params['pool'][i]
         
-        if i==0: 
-            inpt=x
+        if i == 0:
+            inpt = x
         else:
             inpt = prev_layer
-
 
         layer = convPoolLayer(
             inputs=inpt,
@@ -107,18 +114,16 @@ def build_cnn(x, dropout_keep_prob, is_training, params):
             activation_fn=act,
             pool=pool
         )
-
         prev_layer = layer
 
-
     # flatten output of last conv_layer and pass to fc layers
-
     flattened_dim = np.prod(prev_layer.get_shape().as_list()[1:])
     flattened = tf.reshape(prev_layer, [-1, flattened_dim])
-    output = build_mlp(flattened, dropout_keep_prob, is_training, params['fc_params'])
+
+    output = build_mlp(flattened, dropout_keep_prob,
+                       is_training, params['fc_params'])
         
     return output
-
 
 
 def build_mlp(x, dropout_keep_prob, is_training, params):
@@ -132,7 +137,7 @@ def build_mlp(x, dropout_keep_prob, is_training, params):
         layer_name = 'fc_layer'+str(i+1)
         act = ACTIVATIONS[params['activations'][i]]
         
-        if i==0:
+        if i == 0:
             inpt = x
         else:
             inpt = prev_layer
@@ -153,14 +158,15 @@ def build_mlp(x, dropout_keep_prob, is_training, params):
     return prev_layer
 
 
-
 def build_train_graph(loss, params):
 
     with tf.name_scope('train'):
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), params['grad_clip'])
+        grads, _ = tf.clip_by_global_norm(
+            tf.gradients(loss, tvars), params['grad_clip'])
 
-        optimizer = tf.train.MomentumOptimizer(params['learning_rate'], momentum=params['momentum'])
+        optimizer = tf.train.MomentumOptimizer(
+            params['learning_rate'], momentum=params['momentum'])
         train_op = optimizer.apply_gradients(zip(grads, tvars))
         tf.add_to_collection('train_op', train_op)
 
@@ -169,14 +175,15 @@ def build_train_graph(loss, params):
 
 def get_loss(logits, targets, loss_fn='mean_squared'):
     if loss_fn == 'mean_squared':
-        return tf.reduce_sum(tf.square(logits-targets)) # squared error over minibatch
+        return tf.reduce_sum(tf.square(logits-targets))
     elif loss_fn == 'sigmoid_cross_entropy_with_logits':
-        return tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits, targets))
+        return tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits, targets))
     elif loss_fn == 'softmax_cross_entropy_with_logits':
-        return tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits, targets))
+        return tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(logits, targets))
     else:
-        print 'unrecognised loss function'
-        sys.exit(2)
+        raise ValueError('unrecognised loss function')
 
 
 

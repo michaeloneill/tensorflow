@@ -1,13 +1,14 @@
 import tensorflow as tf
-from common.utility_fns import build_train_graph, get_loss
+from model_components import build_cnn, build_mlp, build_rnn
+from model_components import build_train_graph, get_loss, hidden_to_output
+
 
 def build_mlp_model(params):
 
     ''' 
-    build generic mlp model that can be adapted for regression or classification 
-    
+    Build generic mlp model that
+    can be adapted for regression or classification
     '''
-
     with tf.name_scope('input'):
         
         x = tf.placeholder(tf.float32,
@@ -19,7 +20,6 @@ def build_mlp_model(params):
                             shape=params['inpt_shape']['y_'],
                             name='y_')
         tf.add_to_collection('y_', y_)
-
 
     with tf.name_scope('dropout_keep_prob'):
         dropout_keep_prob = tf.placeholder(tf.float32,
@@ -35,10 +35,10 @@ def build_mlp_model(params):
 
     with tf.variable_scope('mlp'):
         output = build_mlp(x, dropout_keep_prob, params['mlp'])
-        tf.add_to_collection('output', mlp)
+        tf.add_to_collection('output', output)
             
     with tf.name_scope('loss'):
-        loss = get_loss(mlp_output, y_, params['train']['loss_fn']) 
+        loss = get_loss(output, y_, params['train']['loss_fn'])
     tf.scalar_summary('loss', loss)
 
     model = {
@@ -48,20 +48,18 @@ def build_mlp_model(params):
         'is_training': is_training,
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
-        'logits': mlp_output
+        'logits': output
     }
     
     return model
 
 
-
 def build_cnn_model(params):
 
-    ''' 
-    build generic cnn model that can be adapted for regression or classification 
-    
     '''
-
+    Build generic cnn model that can be adapted for
+    regression or classification
+    '''
     
     with tf.name_scope('input'):
         
@@ -75,9 +73,9 @@ def build_cnn_model(params):
                             name='y_')
         tf.add_to_collection('y_', y_)
 
-
     with tf.name_scope('dropout_keep_prob'):
-        dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        dropout_keep_prob = tf.placeholder(
+            tf.float32, name='dropout_keep_prob')
         tf.add_to_collection('dropout_keep_prob', dropout_keep_prob)
 
     with tf.name_scope('is_training'):
@@ -90,7 +88,7 @@ def build_cnn_model(params):
         tf.add_to_collection('output', output)
             
     with tf.name_scope('loss'):
-        loss = get_loss(cnn_output, y_, params['train']['loss_fn']) 
+        loss = get_loss(output, y_, params['train']['loss_fn'])
     tf.scalar_summary('loss', loss)
 
     model = {
@@ -100,7 +98,7 @@ def build_cnn_model(params):
         'is_training': is_training,
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
-        'logits': cnn_output
+        'logits': output
     }
     
     return model
@@ -108,15 +106,19 @@ def build_cnn_model(params):
 
 def build_rnn_model(params):
 
-
     with tf.name_scope('input'):
-        x = tf.placeholder(tf.float32, shape=params['inpt_shape']['x'], name='x')
+        x = tf.placeholder(tf.float32,
+                           shape=params['inpt_shape']['x'],
+                           name='x')
         tf.add_to_collection('x', x)
-        y_ = tf.placeholder(tf.float32, shape=params['inpt_shape']['y_'], name='y_')
+        y_ = tf.placeholder(tf.float32,
+                            shape=params['inpt_shape']['y_'],
+                            name='y_')
         tf.add_to_collection('y_', y_)
 
     with tf.name_scope('dropout_keep_prob'):
-        dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        dropout_keep_prob = tf.placeholder(tf.float32,
+                                           name='dropout_keep_prob')
         tf.add_to_collection('dropout_keep_prob', dropout_keep_prob)
 
     with tf.name_scope('is_training'):
@@ -126,17 +128,19 @@ def build_rnn_model(params):
         tf.add_to_collection('is_training', is_training)
     
     with tf.name_scope('lstm'):
-        hiddens, _ = build_rnn(x, dropout_keep_prob, is_training, params['rnn'])
+        hiddens, _ = build_rnn(x, dropout_keep_prob,
+                               is_training, params['rnn'])
             
     with tf.name_scope('output'):
-        output = hidden_to_output(hiddens, params['inpt_shape']['y_'][1], params['rnn']['out_activation']) # (s*b) x dim_output
+        output = hidden_to_output(
+            hiddens, params['inpt_shape']['y_'][1],
+            params['rnn']['out_activation'])  # (s*b) x dim_output
         tf.add_to_collection('output', output)
         
     with tf.name_scope('loss'):
-        loss = get_loss(output, y_, params['train']['loss_fn']) 
+        loss = get_loss(output, y_, params['train']['loss_fn'])
     tf.scalar_summary('loss', loss)
 
-    
     model = {
         'x': x,
         'y_': y_,
