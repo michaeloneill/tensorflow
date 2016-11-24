@@ -48,6 +48,34 @@ def build_rnn(x, dropout_keep_prob, is_training, params):
     return hiddens, state
 
 
+def hidden_to_output(hiddens, dim_output, activation = tf.identity):
+
+    """
+    To be used on hidden state of rnn.
+    hiddens can be s * [bxh] or [bxh] (fully connected cell layers)
+    or it can be s*[bxHxWxnum_output_feature_maps] or [bxHxWxnum_output_feature_maps] (convolutional layers) 
+
+    Either way
+      output (s*b) x dim_output or b*dim_output
+
+    """        
+
+    if type(hiddens) is list:
+        hiddens = tf.concat(0, hiddens)
+    if len(hiddens.get_shape().as_list()) == 4: # convolutional cell
+        dim_hidden = np.prod(hiddens.get_shape().as_list()[1:])
+        hiddens = tf.reshape(hiddens, [-1, dim_hidden])
+    else:
+        assert len(hiddens.get_shape().as_list()) == 2
+        dim_hidden = hiddens.get_shape()[-1].value
+
+    stdev = 1.0/np.sqrt(dim_output)
+    W_out = tf.Variable(tf.random_uniform([dim_hidden, dim_output], -stdev, stdev))
+
+    return activation(tf.matmul(hiddens, W_out))
+                                       
+
+
 
 def build_cnn(x, dropout_keep_prob, is_training, params):
 
