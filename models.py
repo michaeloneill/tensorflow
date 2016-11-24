@@ -5,7 +5,7 @@ from model_components import build_train_graph, get_loss, hidden_to_output
 
 def build_mlp_model(params):
 
-    ''' 
+    '''
     Build generic mlp model that
     can be adapted for regression or classification
     '''
@@ -148,7 +148,7 @@ def build_rnn_model(params):
         'is_training': is_training,
         'loss': loss,
         'train': build_train_graph(loss, params['train']),
-        'logits': outputs,
+        'logits': output,
     }
 
     return model

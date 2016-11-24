@@ -1,42 +1,48 @@
-import os
+import numpy as np
 import tensorflow as tf
-from models import build_mlp_model
+from models import build_mlp_model, build_cnn_model, build_rnn_model
+from training import train
+import os
 
 
-def main():
+def main(USAGE='mlp'):
     '''Example usage of library '''
     
     results_dir = input('Enter results directory: ')
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    # Either
-    params_mlp = {
-        'num_outputs': [100, 100, 512],
-        'activations': ['relu', 'relu', 'identity'],
-        'dropout': [False, False, True]
-    }
-    
-    # or
-    params_rnn = {
-        'cell_type': 'BasicLSTM',
-        'dim_hidden': 100,
-        'num_layers': 1,
-        'seq_len': 7,
-        'out_activation': tf.identity,
-        'dropout': False
-    }
-    
-    # or
-    params_cnn = {
-        'kernel_size': [[3,3], [3,3]],
-        'num_outputs': [6, 12],
-        'activations': ['relu', 'relu'],
-        'pool': [True, True],
-        'fc_params':{'num_outputs': [512],
-                     'activations': ['identity'],
-                     'dropout':[False]
-    }
+    if USAGE is 'mlp':
+        params_model = {
+            'num_outputs': [100, 100, 512],
+            'activations': ['relu', 'relu', 'identity'],
+            'dropout': [False, False, True]
+        }
+
+    elif USAGE is 'rnn':
+        params_model = {
+            'kernel_size': [[3, 3], [3, 3]],
+            'num_outputs': [6, 12],
+            'activations': ['relu', 'relu'],
+            'pool': [True, True],
+            'fc_params': {'num_outputs': [512],
+                          'activations': ['identity'],
+                          'dropout': [False]
+                          }
+        }
+
+    elif USAGE is 'rnn':
+        params_model = {
+            'cell_type': 'BasicLSTM',
+            'dim_hidden': 100,
+            'num_layers': 1,
+            'seq_len': 7,
+            'out_activation': tf.identity,
+            'dropout': False
+        }
+
+    else:
+        raise ValueError('usage not recognised')
 
     params_train = {
         'miniBatchSize': 20,
@@ -49,14 +55,22 @@ def main():
     }
 
     params = {
-        'mlp': params_mlp, # change as required
+        'model': params_model,
         'train': params_train,
         'inpt_shape': {'x': [None, 800], 'y_': [None, 512]},
         'device': '/gpu:1',
         'results_dir': results_dir
     }
 
-    model = build_mlp_model(params) # change as required
+    if USAGE is 'mlp':
+        model = build_mlp_model(params)
+    elif USAGE is 'cnn':
+        model = build_cnn_model(params)
+    elif USAGE is 'rnn':
+        model = build_rnn_model(params)
+    else:
+        raise ValueError('Usage not recognised')
+    
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
 
@@ -71,5 +85,5 @@ def main():
           test_set, params['train'],
           model, sess, results_dir)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()

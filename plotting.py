@@ -6,12 +6,11 @@ from PIL import Image
 def images_to_tuple(images):
 
         """
-        Converts images of shape b x H x W x nChannels(<=4) 
+        Converts images of shape b x H x W x nChannels(<=4)
         into 4-tuple of shape 4*(b x H*W,), where
         elements represent R, G, B and alpha channels
         and empty trailing channels are padded with None.
         This shape is suitable for PIL plotting.
-
         """
         nImages = images.shape[0]
         nChannels = images.shape[-1]
@@ -20,11 +19,11 @@ def images_to_tuple(images):
                      for i in range(nChannels)) + (None,)*(4-nChannels)
 
 
-
 def concatenate_vert(images):
 
-        """ concatenates 2 PIL Image objects vertically """
-
+        """
+        Concatenates 2 PIL Image objects vertically
+        """
         # images = map(Image.open, images) # for filename inputs
         
         W = max(img.size[0] for img in images)
@@ -38,9 +37,6 @@ def concatenate_vert(images):
         return result
 
                                                                                                                                     
-
-
-
 def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                        scale_to_unit_interval=False,
                        output_pixel_vals=True):
@@ -82,12 +78,12 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
         # Create an output numpy ndarray to store the image
         if output_pixel_vals:
             out_array = np.zeros((out_shape[0], out_shape[1], 4),
-                                    dtype='uint8')
+                                 dtype='uint8')
         else:
             out_array = np.zeros((out_shape[0], out_shape[1], 4),
-                                    dtype=X.dtype)
+                                 dtype=X.dtype)
                                     
-        #colors default to 0, alpha defaults to 1 (opaque)
+        # Colors default to 0, alpha defaults to 1 (opaque)
         if output_pixel_vals:
             channel_defaults = [0, 0, 0, 255]
         else:
@@ -110,11 +106,8 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                     X[i], img_shape, tile_shape, tile_spacing,
                     scale_to_unit_interval, output_pixel_vals)
         return out_array
-
-
     else:
         # we are dealing with one channel
-
         H, W = img_shape
         Hs, Ws = tile_spacing
 
@@ -125,15 +118,12 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
 
         for tile_row in range(tile_shape[0]):
             for tile_col in range(tile_shape[1]):
-                if tile_row*tile_shape[1] + tile_col < X.shape[0]: # still images to plot
+                if tile_row*tile_shape[1] + tile_col < X.shape[0]:
                     this_x = X[tile_row*tile_shape[1] + tile_col]
                     if scale_to_unit_interval:
                         this_img = unit_scale(this_x.reshape(img_shape))
                     else:
                         this_img = this_x.reshape(img_shape)
-                        
-                    #assert np.amax(this_img)<=1.0 and np.amin(this_img)>=0.0
-                    
                     c = 1
                     if output_pixel_vals:
                         c = 255
@@ -141,5 +131,4 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                         tile_row*(H+Hs): tile_row*(H+Hs)+H,
                         tile_col*(W+Ws): tile_col*(W+Ws)+W
                     ] = this_img*c
-                    
         return out_array

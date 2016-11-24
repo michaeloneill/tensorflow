@@ -196,9 +196,7 @@ class BNConvLSTMCell(ConvRNNCell):
 
         """Long short-term memory cell (LSTM)."""
         with tf.variable_scope(scope or type(self).__name__):
-            
             c, h = state
-
             concat = _conv_linear([x, h], self.filter_size,
                                   self.num_output_feature_maps * 4, bias=False)
             # split along output_feature_maps
@@ -222,7 +220,8 @@ class BNConvLSTMCell(ConvRNNCell):
             return new_h, new_state
 
 
-def _conv_linear(args, filter_size, num_output_feature_maps, bias, bias_start=0.0, scope=None):
+def _conv_linear(args, filter_size, num_output_feature_maps,
+                 bias, bias_start=0.0, scope=None):
 
     """
     convolution:
@@ -266,15 +265,16 @@ def _conv_linear(args, filter_size, num_output_feature_maps, bias, bias_start=0.
             ''' no need to apply conv2d to x and h seperately and sum
             because they have SAME dimensions and conv2d sums along 3rd axis'''
 
-            res = tf.nn.conv2d(tf.concat(3, args), filtr,
-            strides=[1, 1, 1, 1], padding='SAME')
+            res = tf.nn.conv2d(
+                tf.concat(3, args), filtr,
+                strides=[1, 1, 1, 1], padding='SAME')
         if not bias:
             return res
         bias_term = tf.get_variable(
             "bias", [num_output_feature_maps],
             initializer=tf.constant_initializer(
                 bias_start, dtype=dtype),
-            dtype = dtype
+            dtype=dtype
         )
         return res + bias_term
                                                                       
@@ -319,19 +319,19 @@ def batch_norm(x, name_scope, is_training, epsilon=1e-3,
 
         return is_training*train_time + (1-is_training)*test_time
 
-#######################################################################################################
+#########################################################################
+        # # alternative for boolean is_training
+        # def batch_statistics():
+        #     with tf.control_dependencies([train_mean_op, train_var_op]):
+        #         return tf.nn.batch_normalization(
+        #             x, batch_mean, batch_var, offset, scale, epsilon)
 
-    # alternative for boolean is_training
-    # def batch_statistics():
-    #     with tf.control_dependencies([train_mean_op, train_var_op]):
-    #         return tf.nn.batch_normalization(x, batch_mean, batch_var, offset, scale, epsilon)
-
-
-    # def population_statistics():
-
-    #     return tf.nn.batch_normalization(x, pop_mean, pop_var, offset, scale, epsilon)
-
-    # return tf.cond(training, batch_statistics, population_statistics)
+        # def population_statistics():
+        #     return tf.nn.batch_normalization(
+        #         x, pop_mean, pop_var, offset, scale, epsilon)
+        
+        # return tf.cond(training, batch_statistics, population_statistics
+##############################################################################
 
 
 

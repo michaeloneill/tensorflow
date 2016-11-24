@@ -48,17 +48,18 @@ def batch_norm_wrapper(inputs, is_training, layer_name,
 
         return is_training*train_time + (1-is_training)*test_time
 
+    
 #########################################################################
-        # alternative for boolean is_training
+        # # alternative for boolean is_training
         # def batch_statistics():
         #     with tf.control_dependencies([train_mean_op, train_var_op]):
-        #         return tf.nn.batch_normalization(x, batch_mean, batch_var, offset, scale, epsilon)
-
+        #         return tf.nn.batch_normalization(
+        #             x, batch_mean, batch_var, offset, scale, epsilon)
 
         # def population_statistics():
+        #     return tf.nn.batch_normalization(
+        #         x, pop_mean, pop_var, offset, scale, epsilon)
         
-        #     return tf.nn.batch_normalization(x, pop_mean, pop_var, offset, scale, epsilon)
-
         # return tf.cond(training, batch_statistics, population_statistics
 ##############################################################################
 
@@ -113,13 +114,13 @@ def weight_variable(shape):
 
 
 def conv2d(inputs, filtr):
-    return tf.nn.conv2d(inputs, filtr, strides=[1,1,1,1], padding='SAME')
+    return tf.nn.conv2d(inputs, filtr, strides=[1, 1, 1, 1], padding='SAME')
 
 
 def max_pool_2x2(inpt):
     return tf.nn.max_pool(
         inpt, ksize=[1, 2, 2, 1],
-        strides=[1, 2, 2, 1], padding= 'SAME')
+        strides=[1, 2, 2, 1], padding='SAME')
 
 
 

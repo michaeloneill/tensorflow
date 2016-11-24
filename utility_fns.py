@@ -2,8 +2,8 @@ import numpy as np
 
 
 def unit_scale(X):
-        """ 
-        Scales all values in X to be between 0 and 1 
+        """
+        Scales all values in X to be between 0 and 1
         """
         X = X.astype(np.float32)  # copies by default
         X -= X.min()
@@ -13,15 +13,15 @@ def unit_scale(X):
 
 def sample_patches(images, patch_dim, num_patches):
 
-    ''' 
+    '''
     images is [N x H x W x C]
-    returns [num_patches x patch_dim x patch_dim x C] 
+    returns [num_patches x patch_dim x patch_dim x C]
     '''
 
     N = images.shape[0]
     H = images.shape[1]
     W = images.shape[2]
-    C = images.shape[3]  # channels
+    C = images.shape[3]  # Channels
 
     patches = np.zeros((num_patches, patch_dim, patch_dim, C))
 
@@ -35,6 +35,5 @@ def sample_patches(images, patch_dim, num_patches):
         im_idx = np.random.randint(N)
         patches[i, :, :, :] = images[im_idx, row_start:row_start+patch_dim,
                                      col_start:col_start+patch_dim, :]
-
     return patches
 

@@ -185,15 +185,10 @@ def get_loss(logits, targets, loss_fn='mean_squared'):
     else:
         raise ValueError('unrecognised loss function')
 
-
-
-
-
-
-
+    
 # def build_dcnn(x, dropout_keep_prob, params):
 
-#     """ currently does not support pooling reversal """
+#     """ Currently does not support pooling reversal """
 
 #     dmlp_output = build_mlp(x, dropout_keep_prob, params['fc_params'])
 #     rastered = tf.reshape(dmlp_output, [-1]+params['raster_shape'])
@@ -208,7 +203,7 @@ def get_loss(logits, targets, loss_fn='mean_squared'):
 #         layer_name = 'deconv_layer'+str(i+1)
 #         act = params['activations'][i]
         
-#         if i==0: 
+#         if i == 0:
 #             inpt = rastered
 #         else:
 #             inpt = prev_layer
